@@ -80,6 +80,6 @@ jobs:
     - name: Summary
       if: always()
       run: |
-      echo "CI Pipeline completed successfully!" >> $GITHUB_STEP_SUMMARY
-      echo "Docker image: ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-      echo "ArgoCD will handle deployment from updated Helm charts" >> $GITHUB_STEP_SUMMARY
+        echo "CI Pipeline completed successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "Docker image: ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "ArgoCD will handle deployment from updated Helm charts" >> $GITHUB_STEP_SUMMARY
