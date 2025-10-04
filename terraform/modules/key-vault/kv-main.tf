@@ -93,9 +93,3 @@ resource "azurerm_key_vault_secret" "dockerhub_token" {
 
   depends_on = [azurerm_key_vault_access_policy.current_user]
 }
-
-# Random password for MongoDB
-resource "random_password" "mongodb_password" {
-  length  = 16
-  special = true
-}
