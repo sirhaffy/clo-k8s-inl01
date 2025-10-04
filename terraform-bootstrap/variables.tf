@@ -27,3 +27,9 @@ variable "container_name" {
   type        = string
   default     = "tfstate"
 }
+
+variable "key_vault_name" {
+  description = "Name of the Key Vault (must be globally unique)"
+  type        = string
+  default     = "kv-clo-k8s-inl01-tfstate"
+}

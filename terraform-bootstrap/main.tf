@@ -37,7 +37,7 @@ resource "azurerm_storage_account" "terraform_state" {
   # Security settings
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
-  shared_access_key_enabled       = false  # Use Azure AD authentication
+  shared_access_key_enabled       = true  # Enable for Terraform backend access
 
   # Enable versioning for state file recovery
   blob_properties {
@@ -78,7 +78,7 @@ resource "azurerm_role_assignment" "terraform_state_contributor" {
 
 # Optional: Key Vault for storing sensitive Terraform outputs
 resource "azurerm_key_vault" "terraform_secrets" {
-  name                = "kv-terraform-secrets"
+  name                = var.key_vault_name
   location            = azurerm_resource_group.terraform_state.location
   resource_group_name = azurerm_resource_group.terraform_state.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
