@@ -66,9 +66,9 @@ output "next_steps" {
   description = "Instructions for accessing and using the deployed infrastructure"
   value = <<-EOT
 
-    🚀 Azure Infrastructure deployed successfully!
+    Azure Infrastructure deployed successfully!
 
-    📋 Next Steps:
+    Next Steps:
 
     1. Connect to AKS cluster:
        ${join("\n       ", [
@@ -95,15 +95,8 @@ output "next_steps" {
 
     5. Configure ArgoCD Application for todo-app Helm chart
 
-    🔐 Key Vault: ${module.key_vault.vault_uri}
-    📊 Monitoring: Check Azure Portal for Log Analytics and Application Insights
+    Key Vault: ${module.key_vault.vault_uri}
+    Monitoring: Check Azure Portal for Log Analytics and Application Insights
 
   EOT
-}
-
-# AKS cluster kubeconfig for CI/CD
-output "kube_config" {
-  description = "Kubeconfig for the AKS cluster"
-  value       = module.aks.kube_config
-  sensitive   = true
 }

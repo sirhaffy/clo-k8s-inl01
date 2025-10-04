@@ -21,10 +21,6 @@ provider "kubernetes" {
   client_key             = base64decode(yamldecode(var.kube_config).users[0].user["client-key-data"])
 }
 
-provider "helm" {
-  # Configuration via environment variables or existing kubeconfig
-}
-
 # ArgoCD namespace
 resource "kubernetes_namespace" "argocd" {
   metadata {

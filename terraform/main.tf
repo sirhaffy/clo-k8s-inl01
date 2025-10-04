@@ -130,8 +130,6 @@ module "rbac" {
 module "argocd" {
   source = "./modules/argocd"
 
-  depends_on = [module.aks]
-
   cluster_name           = module.aks.cluster_name
   resource_group_name    = module.resource_group.name
   kube_config           = module.aks.kube_config
