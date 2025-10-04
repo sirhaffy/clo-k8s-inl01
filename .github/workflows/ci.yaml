@@ -6,17 +6,17 @@ on:
       - master
       - main
     paths:
-      - 'todo-app/src/**'
+      - 'src/**'
   pull_request:
     branches:
       - master
       - main
     paths:
-      - 'todo-app/src/**'
+      - 'src/**'
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/todo-app
-  HELM_CHART_PATH: todo-app/helm/todo-app
+  HELM_CHART_PATH: helm/todo-app
 
 jobs:
   build:
@@ -46,8 +46,8 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./todo-app/src
-        file: ./todo-app/src/Dockerfile
+        context: ./src
+        file: ./src/Dockerfile
         push: true
         tags: |
           ${{ env.DOCKER_IMAGE }}:latest
