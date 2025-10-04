@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .add-todo {
+            padding: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .add-todo h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"],
+        textarea {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .todos-section {
+            padding: 30px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .todo-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+
+        .todo-item:hover {
+            transform: translateX(5px);
+        }
+
+        .todo-item.completed {
+            background: #e8f5e8;
+            border-left-color: #28a745;
+            opacity: 0.8;
+        }
+
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+        }
+
+        .todo-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .todo-description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .btn-toggle {
+            background: #28a745;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .api-link {
+            text-align: center;
+            padding: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .api-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Todo App</h1>
+            <p>Manage your tasks with style</p>
+        </div>
+
+        <div class="add-todo">
+            <h2>Add New Todo</h2>
+            <div class="input-group">
+                <input type="text" id="todoTitle" placeholder="Enter todo title..." required>
+                <button onclick="addTodo()">Add Todo</button>
+            </div>
+            <textarea id="todoDescription" placeholder="Description (optional)..." rows="3"></textarea>
+        </div>
+
+        <div class="todos-section">
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterTodos('all')">All</button>
+                <button class="filter-btn" onclick="filterTodos('pending')">Pending</button>
+                <button class="filter-btn" onclick="filterTodos('completed')">Completed</button>
+            </div>
+
+            <div id="todosList" class="loading">Loading todos...</div>
+        </div>
+
+        <div class="api-link">
+            <a href="/swagger" target="_blank">🔧 API Documentation (Swagger)</a>
+        </div>
+    </div>
+
+    <script>
+        let todos = [];
+        let currentFilter = 'all';
+
+        // Load todos when page loads
+        document.addEventListener('DOMContentLoaded', loadTodos);
+
+        async function loadTodos() {
+            try {
+                const response = await fetch('/todos');
+                todos = await response.json();
+                renderTodos();
+            } catch (error) {
+                showError('Failed to load todos: ' + error.message);
+            }
+        }
+
+        async function addTodo() {
+            const title = document.getElementById('todoTitle').value.trim();
+            const description = document.getElementById('todoDescription').value.trim();
+
+            if (!title) {
+                alert('Please enter a title');
+                return;
+            }
+
+            try {
+                const response = await fetch('/todos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, description, isCompleted: false })
+                });
+
+                if (response.ok) {
+                    document.getElementById('todoTitle').value = '';
+                    document.getElementById('todoDescription').value = '';
+                    loadTodos(); // Reload todos
+                } else {
+                    throw new Error('Failed to create todo');
+                }
+            } catch (error) {
+                showError('Failed to add todo: ' + error.message);
+            }
+        }
+
+        async function toggleTodo(id) {
+            try {
+                const response = await fetch(`/todos/${id}/toggle`, { method: 'PATCH' });
+                if (response.ok) {
+                    loadTodos(); // Reload todos
+                } else {
+                    throw new Error('Failed to toggle todo');
+                }
+            } catch (error) {
+                showError('Failed to toggle todo: ' + error.message);
+            }
+        }
+
+        async function deleteTodo(id) {
+            if (!confirm('Are you sure you want to delete this todo?')) return;
+
+            try {
+                const response = await fetch(`/todos/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadTodos(); // Reload todos
+                } else {
+                    throw new Error('Failed to delete todo');
+                }
+            } catch (error) {
+                showError('Failed to delete todo: ' + error.message);
+            }
+        }
+
+        function filterTodos(filter) {
+            currentFilter = filter;
+
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            renderTodos();
+        }
+
+        function renderTodos() {
+            const todosList = document.getElementById('todosList');
+
+            let filteredTodos = todos;
+            if (currentFilter === 'pending') {
+                filteredTodos = todos.filter(todo => !todo.isCompleted);
+            } else if (currentFilter === 'completed') {
+                filteredTodos = todos.filter(todo => todo.isCompleted);
+            }
+
+            if (filteredTodos.length === 0) {
+                todosList.innerHTML = '<div class="loading">No todos found</div>';
+                return;
+            }
+
+            todosList.innerHTML = filteredTodos.map(todo => `
+                <div class="todo-item ${todo.isCompleted ? 'completed' : ''}">
+                    <div class="todo-title">${escapeHtml(todo.title)}</div>
+                    <div class="todo-description">${escapeHtml(todo.description || '')}</div>
+                    <div class="todo-actions">
+                        <button class="btn-small btn-toggle" onclick="toggleTodo('${todo.id}')">
+                            ${todo.isCompleted ? '↺ Undo' : '✓ Complete'}
+                        </button>
+                        <button class="btn-small btn-delete" onclick="deleteTodo('${todo.id}')">
+                            🗑 Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showError(message) {
+            const todosList = document.getElementById('todosList');
+            todosList.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Allow Enter key to add todo
+        document.getElementById('todoTitle').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') addTodo();
+        });
+    </script>
+</body>
+
+</html>

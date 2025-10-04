@@ -6,32 +6,59 @@ namespace TodoApp.Services;
 public class TodoService
 {
     private readonly IMongoCollection<TodoItem> _todosCollection;
+    private readonly ILogger<TodoService> _logger;
 
-    public TodoService(IConfiguration configuration)
+    public TodoService(IConfiguration configuration, ILogger<TodoService> logger)
     {
-        // Get MongoDB connection string from environment variables (K8s secrets) or configuration
-        var connectionString = Environment.GetEnvironmentVariable("MONGODB_URI")
-            ?? configuration.GetConnectionString("MongoDB")
-            ?? "mongodb://localhost:27017"; // Fallback for local development
+        _logger = logger;
 
-        var databaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE")
-            ?? configuration["DatabaseName"]
-            ?? "TodoApp";
+        try
+        {
+            // Get MongoDB connection string from environment variables (K8s secrets) or configuration
+            var connectionString = Environment.GetEnvironmentVariable("MONGODB_URI")
+                ?? configuration.GetConnectionString("MongoDB")
+                ?? "mongodb://localhost:27017"; // Fallback for local development
 
-        var collectionName = Environment.GetEnvironmentVariable("MONGODB_COLLECTION")
-            ?? configuration["CollectionName"]
-            ?? "Todos";
+            var databaseName = Environment.GetEnvironmentVariable("MONGODB_DATABASE")
+                ?? configuration["DatabaseName"]
+                ?? "TodoApp";
 
-        // Create MongoDB client and get database/collection references
-        var mongoClient = new MongoClient(connectionString);
-        var mongoDatabase = mongoClient.GetDatabase(databaseName);
-        _todosCollection = mongoDatabase.GetCollection<TodoItem>(collectionName);
+            var collectionName = Environment.GetEnvironmentVariable("MONGODB_COLLECTION")
+                ?? configuration["CollectionName"]
+                ?? "Todos";
+
+            _logger.LogInformation("Connecting to MongoDB at: {ConnectionString}", connectionString);
+            _logger.LogInformation("Database: {DatabaseName}, Collection: {CollectionName}", databaseName, collectionName);
+
+            // Create MongoDB client and get database/collection references
+            var mongoClient = new MongoClient(connectionString);
+            var mongoDatabase = mongoClient.GetDatabase(databaseName);
+            _todosCollection = mongoDatabase.GetCollection<TodoItem>(collectionName);
+
+            _logger.LogInformation("MongoDB connection established successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to connect to MongoDB");
+            throw;
+        }
     }
 
     // Get all todos
     public async Task<List<TodoItem>> GetAllAsync()
     {
-        return await _todosCollection.Find(_ => true).ToListAsync();
+        try
+        {
+            _logger.LogInformation("Fetching all todos from MongoDB");
+            var result = await _todosCollection.Find(_ => true).ToListAsync();
+            _logger.LogInformation("Retrieved {Count} todos", result.Count);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching todos from MongoDB");
+            throw;
+        }
     }
 
     // Get todo by ID

@@ -1,12 +1,362 @@
 {
   "Version": 1,
-  "Hash": "KhUhrVJmtnMQRaNyT7YKFTR+mCK0eizoC8yJq3+LKa8=",
+  "Hash": "rTWOQc5SgBXiy3M7cUV4B1cgzb2WZZwZCPTaTJUQFUs=",
   "Source": "TodoApp",
   "BasePath": "_content/TodoApp",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": [],
-  "Endpoints": []
+  "DiscoveryPatterns": [
+    {
+      "Name": "TodoApp/wwwroot",
+      "Source": "TodoApp",
+      "ContentRoot": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/",
+      "BasePath": "_content/TodoApp",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/pnohrms5be-yex6m9z21i.gz",
+      "SourceId": "TodoApp",
+      "SourceType": "Discovered",
+      "ContentRoot": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/",
+      "BasePath": "_content/TodoApp",
+      "RelativePath": "index#[.{fingerprint=yex6m9z21i}]?.html.gz",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Alternative",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/index.html",
+      "AssetTraitName": "Content-Encoding",
+      "AssetTraitValue": "gzip",
+      "Fingerprint": "z3o16agdns",
+      "Integrity": "sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/index.html"
+    },
+    {
+      "Identity": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/index.html",
+      "SourceId": "TodoApp",
+      "SourceType": "Discovered",
+      "ContentRoot": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/",
+      "BasePath": "_content/TodoApp",
+      "RelativePath": "index#[.{fingerprint}]?.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "yex6m9z21i",
+      "Integrity": "VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/index.html"
+    }
+  ],
+  "Endpoints": [
+    {
+      "Route": "index.html",
+      "AssetFile": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/pnohrms5be-yex6m9z21i.gz",
+      "Selectors": [
+        {
+          "Name": "Content-Encoding",
+          "Value": "gzip",
+          "Quality": "0.000397298371"
+        }
+      ],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2516"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 04 Oct 2025 11:07:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        },
+        {
+          "Name": "Content-Encoding",
+          "Value": "gzip"
+        },
+        {
+          "Name": "Vary",
+          "Value": "Content-Encoding"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/html"
+        },
+        {
+          "Name": "ETag",
+          "Value": "W/\"VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ=\""
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ="
+        }
+      ]
+    },
+    {
+      "Route": "index.html",
+      "AssetFile": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/index.html",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "10114"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/html"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 04 Oct 2025 11:07:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ="
+        }
+      ]
+    },
+    {
+      "Route": "index.html.gz",
+      "AssetFile": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/pnohrms5be-yex6m9z21i.gz",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2516"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/html"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 04 Oct 2025 11:07:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        },
+        {
+          "Name": "Content-Encoding",
+          "Value": "gzip"
+        },
+        {
+          "Name": "Vary",
+          "Value": "Content-Encoding"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo="
+        }
+      ]
+    },
+    {
+      "Route": "index.yex6m9z21i.html",
+      "AssetFile": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/pnohrms5be-yex6m9z21i.gz",
+      "Selectors": [
+        {
+          "Name": "Content-Encoding",
+          "Value": "gzip",
+          "Quality": "0.000397298371"
+        }
+      ],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2516"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 04 Oct 2025 11:07:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Encoding",
+          "Value": "gzip"
+        },
+        {
+          "Name": "Vary",
+          "Value": "Content-Encoding"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/html"
+        },
+        {
+          "Name": "ETag",
+          "Value": "W/\"VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ=\""
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "yex6m9z21i"
+        },
+        {
+          "Name": "label",
+          "Value": "index.html"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ="
+        }
+      ]
+    },
+    {
+      "Route": "index.yex6m9z21i.html",
+      "AssetFile": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/wwwroot/index.html",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "10114"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/html"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 04 Oct 2025 11:07:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "yex6m9z21i"
+        },
+        {
+          "Name": "label",
+          "Value": "index.html"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-VsfC3Zunh2fSl0p7rlTSEhQaNfeEb1YdOiniID5FkGQ="
+        }
+      ]
+    },
+    {
+      "Route": "index.yex6m9z21i.html.gz",
+      "AssetFile": "/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/pnohrms5be-yex6m9z21i.gz",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "2516"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/html"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sat, 04 Oct 2025 11:07:57 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Encoding",
+          "Value": "gzip"
+        },
+        {
+          "Name": "Vary",
+          "Value": "Content-Encoding"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "yex6m9z21i"
+        },
+        {
+          "Name": "label",
+          "Value": "index.html.gz"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-sWE5cVtR/AqWMtzhed9UJB0zVv43zhFlVpECXPbflXo="
+        }
+      ]
+    }
+  ]
 }

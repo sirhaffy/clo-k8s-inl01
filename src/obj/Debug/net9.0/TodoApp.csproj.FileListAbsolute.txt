@@ -40,3 +40,6 @@
 /mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/TodoApp.pdb
 /mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/TodoApp.genruntimeconfig.cache
 /mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/ref/TodoApp.dll
+/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/bin/Debug/net9.0/TodoApp.staticwebassets.runtime.json
+/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/TodoApp.sourcelink.json
+/mnt/d/Dev/CloudDeveloper/clo_k8s_inl01/todo-app/src/obj/Debug/net9.0/compressed/pnohrms5be-yex6m9z21i.gz

@@ -22,11 +22,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Serve static files (HTML, CSS, JS) - ORDER MATTERS!
+app.UseDefaultFiles(); // Must come BEFORE UseStaticFiles
+app.UseStaticFiles();
 
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
