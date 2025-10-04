@@ -7,11 +7,11 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: haffy/todo-app:v1.0.0
+  repository: haffy/todo-app
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "v1.1.0"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -165,6 +165,41 @@ volumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
+
+# MongoDB Persistent Storage Configuration
+mongodb:
+  enabled: true
+  persistence:
+    enabled: true
+    storageClass: "managed-csi"  # Azure Disk CSI driver
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+  auth:
+    # Password comes from K8s Secret
+    existingSecret: "mongodb-secret"
+    secretKey: "root-password"
+    database: "TodoApp"
+  service:
+    type: ClusterIP
+    port: 27017
+
+# Environment variables - references to secrets
+env:
+  # MongoDB connection comes from secret
+  MONGODB_CONNECTION:
+    secretKeyRef:
+      name: "mongodb-secret"
+      key: "connection-string"
+
+# Production environment settings
+environment: "Production"
+
+# Azure Key Vault integration (for production)
+azure:
+  tenantId: ""  # Set by Terraform or manually
+  keyVaultName: ""  # Set by Terraform or manually
+  # For development these can be left empty - then hardcoded secrets are used
 
 nodeSelector: {}
 

@@ -1,92 +1,138 @@
-# Configure Terraform and Azure provider
+# Root Terraform configuration with modular structure
 terraform {
   required_version = ">= 1.0"
+
+  # Backend configuration for remote state storage
+  # Dynamic values provided via terraform init -backend-config:
+  # - resource_group_name=rg-terraform-state
+  # - storage_account_name=sttodoterraformstate
+  # - container_name=tfstate
+  # - key={environment}/terraform.tfstate
+  backend "azurerm" {
+    use_azuread_auth = true  # Use Azure AD authentication (no storage keys)
+  }
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.0"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.0"
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
     }
   }
 }
 
-# Configure Azure Provider
 provider "azurerm" {
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = true
+    }
+  }
 }
 
-# Data source for current Azure client configuration
+# Data sources
 data "azurerm_client_config" "current" {}
 
-# Variables
-variable "location" {
-  description = "Azure region"
-  type        = string
-  default     = "West Europe"
-}
-
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "dev"
-}
-
-variable "cluster_name" {
-  description = "AKS cluster name"
-  type        = string
-  default     = "todo-app-aks"
-}
-
-# Resource Group
-resource "azurerm_resource_group" "main" {
-  name     = "rg-${var.cluster_name}-${var.environment}"
-  location = var.location
-
-  tags = {
+# Local values for consistent naming
+locals {
+  common_tags = {
     Environment = var.environment
     Project     = "todo-app"
     ManagedBy   = "terraform"
+    Owner       = "haffy"
   }
+
+  naming_prefix = "${var.project_name}-${var.environment}"
 }
 
-# Virtual Network
-resource "azurerm_virtual_network" "main" {
-  name                = "vnet-${var.cluster_name}-${var.environment}"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+# Resource Group Module
+module "resource_group" {
+  source = "./modules/resource-group"
 
-  tags = {
-    Environment = var.environment
-    Project     = "todo-app"
-  }
+  name     = "rg-${local.naming_prefix}"
+  location = var.location
+  tags     = local.common_tags
 }
 
-# Subnet for AKS
-resource "azurerm_subnet" "aks" {
-  name                 = "snet-aks-${var.environment}"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.1.0/24"]
+# Networking Module (VNet, Subnets, NSGs)
+module "networking" {
+  source = "./modules/networking"
+
+  resource_group_name = module.resource_group.name
+  location           = module.resource_group.location
+  naming_prefix      = local.naming_prefix
+  tags              = local.common_tags
 }
 
-# Log Analytics Workspace for monitoring
-resource "azurerm_log_analytics_workspace" "main" {
-  name                = "law-${var.cluster_name}-${var.environment}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
+# Key Vault Module (Secret Manager)
+module "key_vault" {
+  source = "./modules/secret-manager-key-vault"
 
-  tags = {
-    Environment = var.environment
-    Project     = "todo-app"
-  }
+  resource_group_name = module.resource_group.name
+  location           = module.resource_group.location
+  naming_prefix      = local.naming_prefix
+  tenant_id          = data.azurerm_client_config.current.tenant_id
+  object_id          = data.azurerm_client_config.current.object_id
+  tags              = local.common_tags
+}
+
+# Monitoring Module
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  resource_group_name = module.resource_group.name
+  location           = module.resource_group.location
+  naming_prefix      = local.naming_prefix
+  tags              = local.common_tags
+}
+
+# Storage Module (Azure Storage Account & File Shares)
+module "storage" {
+  source = "./modules/storage"
+
+  resource_group_name = module.resource_group.name
+  location           = module.resource_group.location
+  naming_prefix      = local.naming_prefix
+  tags              = local.common_tags
+}
+
+# AKS Module
+module "aks" {
+  source = "./modules/aks"
+
+  resource_group_name     = module.resource_group.name
+  location               = module.resource_group.location
+  naming_prefix          = local.naming_prefix
+  subnet_id             = module.networking.aks_subnet_id
+  log_analytics_workspace_id = module.monitoring.workspace_id
+  key_vault_id          = module.key_vault.id
+  tags                  = local.common_tags
+
+  # AKS configuration
+  kubernetes_version = var.kubernetes_version
+  node_count        = var.node_count
+  vm_size          = var.vm_size
+}
+
+# RBAC Module
+module "rbac" {
+  source = "./modules/rbac"
+
+  resource_group_name = module.resource_group.name
+  aks_principal_id   = module.aks.principal_id
+  key_vault_id       = module.key_vault.id
+}
+
+# ArgoCD Module
+module "argocd" {
+  source = "./modules/argocd"
+
+  depends_on = [module.aks]
+
+  cluster_name           = module.aks.cluster_name
+  resource_group_name    = module.resource_group.name
+  kube_config           = module.aks.kube_config
 }

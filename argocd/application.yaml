@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: todo-app
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: todo-app
+    app.kubernetes.io/component: application
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  # Source repository configuration
+  source:
+    repoURL: https://github.com/sirhaffy/clo-k8s-inl01.git
+    targetRevision: HEAD
+    path: todo-app/helm/todo-app
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: "latest"
+        - name: replicaCount
+          value: "2"
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: todo-app
+
+  # Sync policy for automatic deployment
+  syncPolicy:
+    automated:
+      prune: true          # Remove resources that are no longer in Git
+      selfHeal: true       # Automatically fix drift from desired state
+      allowEmpty: false    # Don't sync if source is empty
+    syncOptions:
+      - CreateNamespace=true    # Create namespace if it doesn't exist
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true         # Prune resources last
+      - ApplyOutOfSyncOnly=true # Only apply resources that are out of sync
+    retry:
+      limit: 5               # Max retry attempts
+      backoff:
+        duration: 5s         # Initial retry delay
+        factor: 2            # Backoff factor
+        maxDuration: 3m      # Maximum retry delay
+
+  # Health check configuration
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas    # Ignore replica differences (for HPA)
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data           # Ignore secret data changes from external sources
+
+  # Revision history limit
+  revisionHistoryLimit: 10

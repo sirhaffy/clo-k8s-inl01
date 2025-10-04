@@ -1,0 +1,19 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.fullname" . }}-mongodb-service
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    component: mongodb
+spec:
+  type: {{ .Values.mongodb.service.type }}
+  ports:
+  - port: {{ .Values.mongodb.service.port }}
+    targetPort: mongodb
+    protocol: TCP
+    name: mongodb
+  selector:
+    {{- include "todo-app.selectorLabels" . | nindent 4 }}
+    component: mongodb
+{{- end }}

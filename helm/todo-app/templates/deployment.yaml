@@ -1,44 +1,87 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: todo-app
+  name: {{ include "todo-app.fullname" . }}
   labels:
-    app: todo-app
+    {{- include "todo-app.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: todo-app
+      {{- include "todo-app.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: todo-app
+        {{- include "todo-app.selectorLabels" . | nindent 8 }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "todo-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-      - name: todo-app
-        image: haffy/todo-app:v1.1.0
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}{{ if .Values.image.tag }}:{{ .Values.image.tag }}{{ end }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - containerPort: 8080
+        - name: http
+          containerPort: 8080
+          protocol: TCP
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
-        - name: MONGODB_URI
-          value: "mongodb://mongodb-service:27017"
-        - name: MONGODB_DATABASE
-          value: "TodoApp"
-        - name: MONGODB_COLLECTION
-          value: "Todos"
+        {{- if .Values.mongodb.enabled }}
+        - name: MONGODB_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mongodb.auth.existingSecret | quote }}
+              key: "connection-string"
+        {{- else if .Values.env.MONGODB_CONNECTION }}
+        - name: MONGODB_CONNECTION
+          {{- if .Values.env.MONGODB_CONNECTION.secretKeyRef }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.env.MONGODB_CONNECTION.secretKeyRef.name | quote }}
+              key: {{ .Values.env.MONGODB_CONNECTION.secretKeyRef.key | quote }}
+          {{- else }}
+          value: {{ .Values.env.MONGODB_CONNECTION | quote }}
+          {{- end }}
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: http
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: http
           initialDelaySeconds: 5
           periodSeconds: 5
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

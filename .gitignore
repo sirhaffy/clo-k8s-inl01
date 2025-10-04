@@ -1,3 +1,7 @@
+# TODO: TEMP, REMOVE THIS LATER.
+README.md
+
+
 # .NET Core build outputs
 bin/
 obj/
@@ -82,6 +86,20 @@ node_modules/
 *-secret.yaml
 secret.yaml
 secrets.yaml
+**/secrets/**
+**/*secret*
+**/secret.yml
+
+# Kubernetes sensitive files
+kubeconfig*
+*.kubeconfig
+kube/config
+.kube/
+
+# ArgoCD sensitive files
+**/argocd/admin.password
+**/argocd/server.crt
+**/argocd/server.key
 
 # Environment files
 .env
@@ -106,8 +124,49 @@ docker-data/
 # Terraform
 *.tfstate
 *.tfstate.*
+*.tfstate.backup
 .terraform/
 .terraform.lock.hcl
+.terraform.tfstate.lock.info
+*.tfplan
+*.tfvars
+!*.tfvars.example
+terraform.rc
+.terraformrc
+crash.log
+crash.*.log
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+*.plan
+
+# Azure specific
+.azure/
+*.publishsettings
+
+# Kubernetes config files with credentials
+kubeconfig
+config
+*.kubeconfig
+
+# Azure CLI credentials
+.azure/
+
+# Service Principal files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Backup files from terraform
+*.backup
 
 # Local configuration overrides
 appsettings.Local.json
