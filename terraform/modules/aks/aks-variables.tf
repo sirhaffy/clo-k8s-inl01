@@ -26,6 +26,7 @@ variable "log_analytics_workspace_id" {
 variable "key_vault_id" {
   description = "Key Vault ID for secrets integration"
   type        = string
+  default     = null
 }
 
 variable "kubernetes_version" {

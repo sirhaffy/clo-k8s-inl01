@@ -69,7 +69,7 @@ module "networking" {
 
 # Key Vault Module (Secret Manager)
 module "key_vault" {
-  source = "./modules/secret-manager-key-vault"
+  source = "./modules/key-vault"
 
   resource_group_name = module.resource_group.name
   location           = module.resource_group.location
