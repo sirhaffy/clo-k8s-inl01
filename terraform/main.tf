@@ -9,7 +9,7 @@ terraform {
   # - container_name=tfstate
   # - key={environment}/terraform.tfstate
   backend "azurerm" {
-    use_azuread_auth = true  # Use Azure AD authentication (no storage keys)
+    # Will use storage account access keys (enabled in bootstrap)
   }
 
   required_providers {
