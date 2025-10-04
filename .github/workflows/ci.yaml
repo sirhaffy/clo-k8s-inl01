@@ -55,31 +55,14 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Update Helm chart with new image tag
+    - name: Display build info
       run: |
-        # Update deployment.yaml with new image tag
-        sed -i "s|image: ${{ env.DOCKER_IMAGE }}:.*|image: ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}|g" \
-          ${{ env.HELM_CHART_PATH }}/templates/deployment.yaml
-
-        # Update Chart.yaml version
-        sed -i "s|version: .*|version: $(echo ${{ steps.version.outputs.VERSION }} | sed 's/v//')|g" \
-          ${{ env.HELM_CHART_PATH }}/Chart.yaml
-
-        # Update appVersion in Chart.yaml
-        sed -i "s|appVersion: .*|appVersion: \"${{ steps.version.outputs.VERSION }}\"|g" \
-          ${{ env.HELM_CHART_PATH }}/Chart.yaml
-
-    - name: Commit updated Helm charts
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add ${{ env.HELM_CHART_PATH }}/
-        git diff --staged --quiet || git commit -m "chore: update helm chart to ${{ steps.version.outputs.VERSION }}"
-        git push
-
-    - name: Summary
-      if: always()
-      run: |
-        echo "CI Pipeline completed successfully!" >> $GITHUB_STEP_SUMMARY
-        echo "Docker image: ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-        echo "ArgoCD will handle deployment from updated Helm charts" >> $GITHUB_STEP_SUMMARY
+        echo "✅ CI Pipeline completed successfully!"
+        echo "📦 Docker image built and pushed:"
+        echo "   - ${{ env.DOCKER_IMAGE }}:latest"
+        echo "   - ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}"
+        echo ""
+        echo "🎯 Next steps:"
+        echo "   - ArgoCD will handle deployment"
+        echo "   - Manually update Helm chart if needed"
+        echo "   - New image tag: ${{ steps.version.outputs.VERSION }}"
