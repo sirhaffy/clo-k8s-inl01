@@ -1,0 +1,30 @@
+# Ignore build outputs
+bin/
+obj/
+out/
+
+# Ignore IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore Docker files
+Dockerfile*
+.dockerignore
+
+# Ignore logs
+*.log
+
+# Ignore temp files
+*.tmp
+*.temp
