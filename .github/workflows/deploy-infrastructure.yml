@@ -49,16 +49,16 @@ jobs:
       - name: Check if backend exists
         id: check
         run: |
-          echo "Checking if Terraform backend exists..."
-          if az storage account show --name ${{ env.TF_BACKEND_STORAGE_ACCOUNT }} --resource-group ${{ env.TF_BACKEND_RESOURCE_GROUP }} &>/dev/null; then
+          echo "Checking if Terraform backend container exists..."
+          if az storage container show --name ${{ env.TF_BACKEND_CONTAINER }} --account-name ${{ env.TF_BACKEND_STORAGE_ACCOUNT }} --auth-mode login &>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" >> $GITHUB_OUTPUT
             echo "container_name=${{ env.TF_BACKEND_CONTAINER }}" >> $GITHUB_OUTPUT
             echo "resource_group_name=${{ env.TF_BACKEND_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
-            echo "Backend storage already exists"
+            echo "Backend container already exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Backend storage does not exist, will create"
+            echo "Backend container does not exist, will create via bootstrap"
           fi
 
   bootstrap-backend:
