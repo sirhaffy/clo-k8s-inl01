@@ -15,7 +15,7 @@ on:
       - 'todo-app/src/**'
 
 env:
-  DOCKER_IMAGE: haffy/todo-app
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/todo-app
   HELM_CHART_PATH: todo-app/helm/todo-app
 
 jobs:
