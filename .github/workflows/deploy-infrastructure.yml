@@ -91,7 +91,12 @@ jobs:
         run: |
           echo "Creating Terraform backend infrastructure..."
           terraform init
-          terraform plan -out=bootstrap.tfplan
+          terraform plan -out=bootstrap.tfplan \
+            -var="resource_group_name=${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
+            -var="location=${{ env.TF_VAR_location }}" \
+            -var="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+            -var="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
+            -var="project_name=${{ env.TF_VAR_naming_prefix }}"
           terraform apply -auto-approve bootstrap.tfplan
 
           echo "storage_account_name=$(terraform output -raw storage_account_name)" >> $GITHUB_OUTPUT

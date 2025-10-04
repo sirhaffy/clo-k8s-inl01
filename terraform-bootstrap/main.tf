@@ -15,19 +15,19 @@ provider "azurerm" {
 
 # Resource Group for Terraform state storage
 resource "azurerm_resource_group" "terraform_state" {
-  name     = "rg_clo_k8s_inl01"
-  location = "North Europe"
+  name     = var.resource_group_name
+  location = var.location
 
   tags = {
     Environment = "shared"
     Purpose     = "terraform-state"
-    Project     = "clo-k8s-inl01"
+    Project     = var.project_name
   }
 }
 
 # Storage Account for Terraform state
 resource "azurerm_storage_account" "terraform_state" {
-  name                     = "stclok8sinl01tfstate"
+  name                     = var.storage_account_name
   resource_group_name      = azurerm_resource_group.terraform_state.name
   location                = azurerm_resource_group.terraform_state.location
   account_tier             = "Standard"
@@ -55,14 +55,14 @@ resource "azurerm_storage_account" "terraform_state" {
   tags = {
     Environment = "shared"
     Purpose     = "terraform-state"
-    Project     = "todo-app"
+    Project     = var.project_name
   }
 }
 
 # Storage Container for Terraform state files
 resource "azurerm_storage_container" "terraform_state" {
-  name                 = "tfstate"
-  storage_account_id   = azurerm_storage_account.terraform_state.id
+  name                  = var.container_name
+  storage_account_name  = azurerm_storage_account.terraform_state.name
   container_access_type = "private"
 }
 
@@ -102,7 +102,7 @@ resource "azurerm_key_vault" "terraform_secrets" {
   tags = {
     Environment = "shared"
     Purpose     = "terraform-secrets"
-    Project     = "todo-app"
+    Project     = var.project_name
   }
 }
 
