@@ -9,7 +9,7 @@ on:
       environment:
         description: 'Environment to deploy'
         required: true
-        default: 'dev'
+        default: 'dev' # Change to 'prod' here if you want to deploy to production on master/main
         type: choice
         options: [dev, staging, production]
       terraform_action:
@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-backend, bootstrap-backend, terraform-plan]
     if: (github.event_name == 'push' || github.event.inputs.terraform_action == 'apply') && needs.terraform-plan.outputs.tfplan_exitcode == '2' && always() && (needs.check-backend.outputs.backend_exists == 'true' || needs.bootstrap-backend.result == 'success')
-    environment: ${{ env.TF_VAR_environment }}
+    environment: ${{ github.event.inputs.environment || 'dev' }}
     outputs:
       resource_group_name: ${{ steps.terraform.outputs.resource_group_name }}
       aks_cluster_name: ${{ steps.terraform.outputs.aks_cluster_name }}
