@@ -169,6 +169,7 @@ volumeMounts: []
 # MongoDB Persistent Storage Configuration
 mongodb:
   enabled: true
+  # Passwords come from Azure Key Vault via External Secrets Operator
   persistence:
     enabled: true
     storageClass: "managed-csi"  # Azure Disk CSI driver
@@ -176,7 +177,7 @@ mongodb:
       - ReadWriteOnce
     size: 10Gi
   auth:
-    # Password comes from K8s Secret
+    # Password comes from External Secret (Azure Key Vault)
     existingSecret: "mongodb-secret"
     secretKey: "root-password"
     database: "TodoApp"
@@ -197,9 +198,10 @@ environment: "Production"
 
 # Azure Key Vault integration (for production)
 azure:
-  tenantId: ""  # Set by Terraform or manually
-  keyVaultName: ""  # Set by Terraform or manually
-  # For development these can be left empty - then hardcoded secrets are used
+  tenantId: ""  # Set by GitHub Actions from Terraform output
+  keyVaultName: ""  # Set by GitHub Actions from Terraform output
+  keyVaultUri: ""  # Set by GitHub Actions from Terraform output
+  # These values will be populated by the GitHub Actions workflow
 
 nodeSelector: {}
 

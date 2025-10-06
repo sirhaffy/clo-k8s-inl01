@@ -79,7 +79,7 @@ resource "azurerm_key_vault_secret" "mongodb_database" {
 
 resource "azurerm_key_vault_secret" "mongodb_connection" {
   name         = "mongodb-connection-string"
-  value        = "mongodb://root:${random_password.mongodb_password.result}@mongodb-service:27017/TodoApp"
+  value        = "mongodb://root:${random_password.mongodb_password.result}@todo-app-mongodb-service:27017/TodoApp?authSource=admin"
   key_vault_id = azurerm_key_vault.main.id
 
   depends_on = [azurerm_key_vault_access_policy.current_user]
