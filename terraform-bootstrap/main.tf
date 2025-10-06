@@ -25,8 +25,16 @@ resource "azurerm_resource_group" "terraform_state" {
   }
 }
 
-# Storage Account for Terraform state
+# Check if storage account already exists
+data "azurerm_storage_account" "existing" {
+  name                = var.storage_account_name
+  resource_group_name = var.resource_group_name
+  count              = can(data.azurerm_storage_account.existing) ? 1 : 0
+}
+
+# Create storage account only if it doesn't exist
 resource "azurerm_storage_account" "terraform_state" {
+  count                   = length(data.azurerm_storage_account.existing) == 0 ? 1 : 0
   name                     = var.storage_account_name
   resource_group_name      = azurerm_resource_group.terraform_state.name
   location                = azurerm_resource_group.terraform_state.location
