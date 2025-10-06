@@ -107,6 +107,26 @@ jobs:
             -backend-config="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
             -backend-config="key=terraform.tfstate"
 
+      - name: Terraform Validate
+        working-directory: ./terraform
+        run: terraform validate
+
+      - name: Validate Kubernetes YAML
+        run: |
+          # Check ArgoCD YAML files
+          for file in argocd/*.yaml; do
+            if [ -f "$file" ]; then
+              echo "Validating $file"
+              kubectl --dry-run=client apply -f "$file" || echo "Warning: $file has validation issues"
+            fi
+          done
+
+          # Check Helm templates
+          if [ -d "helm/todo-app" ]; then
+            echo "Validating Helm templates"
+            helm template test-release helm/todo-app --dry-run || echo "Warning: Helm template has issues"
+          fi
+
       - name: Terraform Plan
         id: plan
         working-directory: ./terraform
@@ -223,6 +243,40 @@ jobs:
             fi
           else
             echo "Resource group will be created"
+          fi
+
+      - name: Import Key Vault Access Policy if needed
+        working-directory: ./terraform
+        continue-on-error: true
+        run: |
+          # Get AKS managed identity object ID
+          AKS_NAME="aks-${{ env.TF_VAR_naming_prefix }}"
+          if az aks show --name "$AKS_NAME" --resource-group "${{ env.TF_VAR_resource_group_name }}" &>/dev/null; then
+            AKS_IDENTITY_ID=$(az aks show --name "$AKS_NAME" --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "identityProfile.kubeletidentity.objectId" -o tsv 2>/dev/null || echo "")
+
+            if [ ! -z "$AKS_IDENTITY_ID" ]; then
+              echo "Found AKS managed identity: $AKS_IDENTITY_ID"
+
+              # Check if access policy exists in Azure but not in state
+              KV_NAME=$(az keyvault list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?!contains(name, 'tfstate')].name" --output tsv | head -1)
+
+              if [ ! -z "$KV_NAME" ]; then
+                echo "Found Key Vault: $KV_NAME"
+
+                if ! terraform state show module.key_vault.azurerm_key_vault_access_policy.aks_managed_identity[0] &>/dev/null; then
+                  echo "Importing Key Vault access policy..."
+                  terraform import \
+                    -var="environment=${{ env.TF_VAR_environment }}" \
+                    -var="location=${{ env.TF_VAR_location }}" \
+                    -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+                    -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
+                    module.key_vault.azurerm_key_vault_access_policy.aks_managed_identity[0] \
+                    "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.KeyVault/vaults/$KV_NAME/objectId/$AKS_IDENTITY_ID" || echo "Import failed, continuing..."
+                else
+                  echo "Key Vault access policy already in state"
+                fi
+              fi
+            fi
           fi
 
       - name: Terraform Apply
