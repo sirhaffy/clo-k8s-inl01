@@ -260,6 +260,28 @@ jobs:
             -backend-config="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
             -backend-config="key=terraform.tfstate"
 
+      - name: Import Resource Group if needed
+        working-directory: ./terraform
+        run: |
+          # Check if RG exists in Azure but not in state
+          if az group show --name "${{ env.TF_VAR_resource_group_name }}" &>/dev/null; then
+            if ! terraform state show module.resource_group.azurerm_resource_group.main &>/dev/null; then
+              echo "Importing existing resource group into state..."
+              terraform import \
+                -var="environment=${{ env.TF_VAR_environment }}" \
+                -var="location=${{ env.TF_VAR_location }}" \
+                -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+                -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
+                module.resource_group.azurerm_resource_group.main \
+                "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}"
+              echo "Resource group imported successfully"
+            else
+              echo "Resource group already in state"
+            fi
+          else
+            echo "ℹResource group will be created"
+          fi
+
       - name: Terraform Apply
         id: terraform
         working-directory: ./terraform
