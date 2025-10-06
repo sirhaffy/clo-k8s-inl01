@@ -100,5 +100,11 @@ resource "azurerm_application_gateway" "main" {
     backend_http_settings_name = "appgw-be-htst"
   }
 
+  # SSL Policy for modern TLS versions
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20220101S"
+  }
+
   tags = var.tags
 }
