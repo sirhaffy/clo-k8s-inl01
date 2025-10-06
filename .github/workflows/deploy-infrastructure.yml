@@ -118,13 +118,27 @@ jobs:
 
       - name: Generate plan summary
         run: |
+          # Determine plan status based on exit code
+          if [ "${{ steps.plan.outputs.exitcode }}" -eq "0" ]; then
+            PLAN_STATUS="No changes needed"
+          elif [ "${{ steps.plan.outputs.exitcode }}" -eq "2" ]; then
+            PLAN_STATUS="Changes planned - ready to apply"
+          else
+            PLAN_STATUS="Plan failed with errors"
+          fi
+
           echo "## Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Environment: ${{ env.TF_VAR_environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Location: ${{ env.TF_VAR_location }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Naming prefix: ${{ env.TF_VAR_naming_prefix }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Plan exit code: ${{ steps.plan.outputs.exitcode }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Backend status: Infrastructure verified" >> $GITHUB_STEP_SUMMARY
-          echo "- Workflow run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ env.TF_VAR_environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Location | ${{ env.TF_VAR_location }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Naming prefix | ${{ env.TF_VAR_naming_prefix }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Plan Status** | **$PLAN_STATUS** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exit Code | ${{ steps.plan.outputs.exitcode }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | Azure Storage (verified) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View full workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
   terraform-apply:
     name: Terraform Apply
