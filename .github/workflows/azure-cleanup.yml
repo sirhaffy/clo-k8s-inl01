@@ -1,121 +1,58 @@
-name: Cleanup Azure Resources
+name: Cleanup All Azure Resources
 
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Environment to cleanup'
-        required: true
-        default: 'dev'
-        type: choice
-        options: [dev, staging, production]
-      confirm_deletion:
-        description: 'Type "DELETE" to confirm resource deletion'
+      confirm:
+        description: 'Type "DELETE-ALL" to confirm complete cleanup'
         required: true
         type: string
-      resource_group_name:
-        description: 'Resource group name to delete'
-        required: true
-        type: string
-
-env:
-  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
 jobs:
-  validate-input:
-    name: Validate Deletion Request
+  cleanup:
+    name: Delete Everything
     runs-on: ubuntu-latest
-    outputs:
-      proceed: ${{ steps.validate.outputs.proceed }}
+    if: github.event.inputs.confirm == 'DELETE-ALL'
+
     steps:
-      - name: Validate deletion confirmation
-        id: validate
-        run: |
-          if [ "${{ github.event.inputs.confirm_deletion }}" = "DELETE" ]; then
-            echo "proceed=true" >> $GITHUB_OUTPUT
-            echo "Deletion confirmed"
-          else
-            echo "proceed=false" >> $GITHUB_OUTPUT
-            echo "Invalid confirmation. Type 'DELETE' to proceed"
-            exit 1
-          fi
-
-  cleanup-terraform:
-    name: Cleanup Terraform State
-    needs: validate-input
-    if: needs.validate-input.outputs.proceed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
-
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Terraform Init
-        working-directory: ./terraform
+      - name: Delete All Project Resources
         run: |
-          terraform init \
-            -backend-config="resource_group_name=rg-terraform-state" \
-            -backend-config="storage_account_name=sttodoterraformstate" \
-            -backend-config="container_name=tfstate" \
-            -backend-config="key=${{ github.event.inputs.environment }}/terraform.tfstate"
+          echo "Starting complete cleanup..."
 
-      - name: Terraform Destroy
-        working-directory: ./terraform
-        run: |
-          echo "Starting Terraform destroy for environment: ${{ github.event.inputs.environment }}"
-          terraform destroy -auto-approve \
-            -var="environment=${{ github.event.inputs.environment }}" \
-            -var="location=North Europe" \
-            -var="naming_prefix=todo-${{ github.event.inputs.environment }}"
-
-      - name: Generate terraform cleanup summary
-        run: |
-          echo "## Terraform Resources Destroyed" >> $GITHUB_STEP_SUMMARY
-          echo "- Environment: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Location: North Europe" >> $GITHUB_STEP_SUMMARY
-          echo "- Naming prefix: todo-${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: Terraform destroy completed" >> $GITHUB_STEP_SUMMARY
-          echo "- Workflow run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-
-  cleanup-resource-group:
-    name: Delete Resource Group
-    needs: [validate-input, cleanup-terraform]
-    if: needs.validate-input.outputs.proceed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Delete Resource Group
-        run: |
-          if az group exists --name ${{ github.event.inputs.resource_group_name }}; then
-            echo "Deleting Resource Group: ${{ github.event.inputs.resource_group_name }}"
-            az group delete --name ${{ github.event.inputs.resource_group_name }} --yes --no-wait
-            echo "Resource Group deletion initiated"
-          else
-            echo "Resource Group ${{ github.event.inputs.resource_group_name }} does not exist"
+          # Delete main resource group (contains everything)
+          if az group exists --name "rg-clo-k8s-inl01"; then
+            echo "Deleting main resource group: rg-clo-k8s-inl01"
+            az group delete --name "rg-clo-k8s-inl01" --yes --no-wait
           fi
 
-      - name: Generate cleanup summary
+          # Delete AKS managed resource group if it exists
+          MC_RG=$(az group list --query "[?starts_with(name, 'MC_rg_clo_k8s_inl01')].name" -o tsv)
+          if [ ! -z "$MC_RG" ]; then
+            echo "Deleting AKS managed resource group: $MC_RG"
+            az group delete --name "$MC_RG" --yes --no-wait
+          fi
+
+          # Delete terraform state resource group
+          if az group exists --name "rg-terraform-state"; then
+            echo "Deleting terraform state resource group: rg-terraform-state"
+            az group delete --name "rg-terraform-state" --yes --no-wait
+          fi
+
+          echo "Cleanup initiated - all resources will be deleted"
+
+      - name: Cleanup Summary
         run: |
-          echo "## Azure Resources Cleanup Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Environment: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Resource Group: ${{ github.event.inputs.resource_group_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Cleanup date: $(date)" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: Cleanup process completed" >> $GITHUB_STEP_SUMMARY
-          echo "- Workflow run: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "##Complete Azure Cleanup Initiated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deleted Resource Groups:**" >> $GITHUB_STEP_SUMMARY
+          echo "- rg-clo-k8s-inl01 (main project resources)" >> $GITHUB_STEP_SUMMARY
+          echo "- MC_rg_clo_k8s_inl01_* (AKS managed resources)" >> $GITHUB_STEP_SUMMARY
+          echo "- rg-terraform-state (terraform state)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** All project resources deletion initiated" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
