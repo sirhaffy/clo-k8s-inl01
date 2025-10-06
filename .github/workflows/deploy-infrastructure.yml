@@ -96,6 +96,19 @@ jobs:
 
           terraform validate
 
+      - name: Import Existing Resource Group (if needed)
+        working-directory: ./terraform
+        continue-on-error: true
+        run: |
+          echo "Attempting to import existing resource group..."
+          terraform import \
+            -var="environment=${{ env.TF_VAR_environment }}" \
+            -var="location=${{ env.TF_VAR_location }}" \
+            -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+            -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
+            module.resource_group.azurerm_resource_group.main \
+            "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}" || echo "Resource group not found or already in state"
+
       - name: Terraform Plan
         id: plan
         working-directory: ./terraform
@@ -209,18 +222,6 @@ jobs:
             -backend-config="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
             -backend-config="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
             -backend-config="key=terraform.tfstate"
-
-      - name: Import Existing Resource Group
-        working-directory: ./terraform
-        continue-on-error: true
-        run: |
-          terraform import \
-            -var="environment=${{ env.TF_VAR_environment }}" \
-            -var="location=${{ env.TF_VAR_location }}" \
-            -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
-            -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
-            module.resource_group.azurerm_resource_group.main \
-            "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}"
 
       - name: Terraform Apply
         id: terraform
