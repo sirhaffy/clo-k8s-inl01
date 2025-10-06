@@ -126,3 +126,14 @@ module "rbac" {
   aks_principal_id   = module.aks.principal_id
   key_vault_id       = module.key_vault.id
 }
+
+# Application Gateway Module
+module "application_gateway" {
+  source = "./modules/application-gateway"
+
+  resource_group_name = module.resource_group.name
+  location           = module.resource_group.location
+  naming_prefix      = var.naming_prefix
+  appgw_subnet_id    = module.networking.appgw_subnet_id
+  tags              = local.common_tags
+}

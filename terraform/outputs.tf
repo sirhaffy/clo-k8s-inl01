@@ -30,6 +30,11 @@ output "storage_account_name" {
   value       = module.storage.storage_account_name
 }
 
+output "application_gateway_public_ip" {
+  description = "Public IP address of Application Gateway"
+  value       = module.application_gateway.public_ip_address
+}
+
 # Sensitive outputs
 output "kube_config" {
   description = "Kubernetes configuration for kubectl access"
