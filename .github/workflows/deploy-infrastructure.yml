@@ -379,10 +379,6 @@ jobs:
               echo "ArgoCD is installed but not ready, will reinstall"
               echo "skip_install=false" >> $GITHUB_OUTPUT
             fi
-            else
-              echo "ArgoCD namespace exists but deployment missing, will install"
-              echo "skip_install=false" >> $GITHUB_OUTPUT
-            fi
           else
             echo "ArgoCD not installed, will install"
             echo "skip_install=false" >> $GITHUB_OUTPUT
