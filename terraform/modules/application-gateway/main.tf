@@ -1,3 +1,9 @@
+# Data source to get AKS node IPs dynamically
+data "azurerm_kubernetes_cluster" "aks" {
+  name                = "aks-${var.naming_prefix}"
+  resource_group_name = var.resource_group_name
+}
+
 # Public IP for Application Gateway
 resource "azurerm_public_ip" "appgw" {
   name                = "pip-${var.naming_prefix}-appgw"
@@ -59,19 +65,21 @@ resource "azurerm_application_gateway" "main" {
     port = 443
   }
 
-  # Backend Address Pool
+  # Backend Address Pool (AKS subnet for auto-discovery)
   backend_address_pool {
     name = "appgw-beap"
+    # Application Gateway will auto-discover healthy nodes in AKS subnet
   }
 
   # Backend HTTP Settings
   backend_http_settings {
     name                  = "appgw-be-htst"
     cookie_based_affinity = "Disabled"
-    path                  = "/path1/"
-    port                  = 80
+    path                  = "/"
+    port                  = 31998  # nginx-ingress NodePort for HTTP
     protocol              = "Http"
     request_timeout       = 60
+    pick_host_name_from_backend_address = false
   }
 
   # HTTP Listener

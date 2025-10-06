@@ -156,81 +156,14 @@ jobs:
           echo "| Location | ${{ env.TF_VAR_location }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Next Step | $NEXT_STEP |" >> $GITHUB_STEP_SUMMARY
 
-  verify-infrastructure:
-    name: Verify Infrastructure
-    runs-on: ubuntu-latest
-    needs: terraform-plan
-    if: needs.terraform-plan.outputs.tfplan_exitcode == '0'
-    outputs:
-      force_apply: ${{ steps.verify.outputs.force_apply }}
-    steps:
-      - uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Verify Infrastructure
-        id: verify
-        run: |
-          # Check if critical resources actually exist
-          MISSING_RESOURCES=false
-
-          # Check AKS cluster
-          if ! az aks show --name "aks-${{ secrets.PROJECT_PREFIX }}" --resource-group "${{ env.TF_VAR_resource_group_name }}" &>/dev/null; then
-            echo "AKS cluster missing"
-            MISSING_RESOURCES=true
-          fi
-
-          # Check Key Vault (with random suffix pattern)
-          if ! az keyvault list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?starts_with(name, 'kv-clok8sinl01')]" --output tsv | head -1 &>/dev/null; then
-            echo "Key Vault missing"
-            MISSING_RESOURCES=true
-          fi
-
-          # Check Storage Account (with random suffix pattern)
-          if ! az storage account list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?starts_with(name, 'stclok8sinl01') && !ends_with(name, 'backend')]" --output tsv | head -1 &>/dev/null; then
-            echo "Storage Account missing"
-            MISSING_RESOURCES=true
-          fi
-
-          # Check Application Gateway
-          if ! az network application-gateway list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?starts_with(name, 'appgw-clok8sinl01')]" --output tsv | head -1 &>/dev/null; then
-            echo "Application Gateway missing"
-            MISSING_RESOURCES=true
-          fi
-
-          if [ "$MISSING_RESOURCES" = true ]; then
-            echo "Critical resources missing - forcing apply"
-            echo "force_apply=true" >> $GITHUB_OUTPUT
-          else
-            echo "All critical resources exist"
-            echo "force_apply=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Verification Summary
-        run: |
-          if [ "${{ steps.verify.outputs.force_apply }}" == "true" ]; then
-            STATUS="Missing resources detected"
-            NEXT_STEP="Will force apply"
-          else
-            STATUS="All resources exist"
-            NEXT_STEP="No action needed"
-          fi
-
-          echo "## Infrastructure Verification $ICON" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Status | **$STATUS** |" >> $GITHUB_STEP_SUMMARY
-          echo "| Next Step | $NEXT_STEP |" >> $GITHUB_STEP_SUMMARY
-
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    needs: [terraform-plan, verify-infrastructure]
+    needs: terraform-plan
     if: |
       always() && (
         needs.terraform-plan.outputs.tfplan_exitcode == '2' ||
-        (needs.verify-infrastructure.result == 'success' && needs.verify-infrastructure.outputs.force_apply == 'true')
+        (github.event_name == 'push' && contains(github.event.head_commit.modified, 'terraform/'))
       )
     outputs:
       resource_group_name: ${{ steps.terraform.outputs.resource_group_name }}
@@ -316,8 +249,8 @@ jobs:
   install-argocd:
     name: Install ArgoCD
     runs-on: ubuntu-latest
-    needs: [terraform-plan, verify-infrastructure, terraform-apply]
-    if: always() && (needs.terraform-plan.result == 'success' || needs.verify-infrastructure.result == 'success')
+    needs: [terraform-plan, terraform-apply]
+    if: always() && needs.terraform-plan.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
