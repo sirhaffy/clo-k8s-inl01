@@ -87,7 +87,6 @@ node_modules/
 secret.yaml
 secrets.yaml
 **/secrets/**
-**/*secret*
 **/secret.yml
 
 # Kubernetes sensitive files
