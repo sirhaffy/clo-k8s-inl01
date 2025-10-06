@@ -46,22 +46,12 @@ variable "min_node_count" {
   description = "Minimum number of nodes for autoscaling"
   type        = number
   default     = 1
-
-  validation {
-    condition     = var.min_node_count >= 1 && var.min_node_count <= 5
-    error_message = "Minimum node count must be between 1 and 5."
-  }
 }
 
 variable "max_node_count" {
   description = "Maximum number of nodes for autoscaling"
   type        = number
   default     = 5
-
-  validation {
-    condition     = var.max_node_count >= var.min_node_count && var.max_node_count <= 10
-    error_message = "Maximum node count must be greater than or equal to minimum node count and not exceed 10."
-  }
 }
 
 variable "vm_size" {
