@@ -104,7 +104,6 @@ jobs:
       - name: Terraform Plan
         id: plan
         working-directory: ./terraform
-        continue-on-error: true
         run: |
           terraform plan -detailed-exitcode -no-color -out tfplan \
             -var="environment=${{ env.TF_VAR_environment }}" \

@@ -14,14 +14,16 @@ variable "naming_prefix" {
 variable "location" {
   description = "Azure region where resources will be created"
   type        = string
-  default     = "West Europe"
+  default     = "northeurope"
 
   validation {
     condition = contains([
-      "West Europe", "North Europe", "East US", "West US", "Central US",
+      "northeurope", "westeurope", "eastus", "westus", "centralus",
+      "southeastasia", "eastasia", "uksouth", "australiaeast",
+      "North Europe", "West Europe", "East US", "West US", "Central US",
       "Southeast Asia", "East Asia", "UK South", "Australia East"
     ], var.location)
-    error_message = "Location must be a valid Azure region."
+    error_message = "Location must be a valid Azure region (e.g., 'northeurope' or 'North Europe')."
   }
 }
 
