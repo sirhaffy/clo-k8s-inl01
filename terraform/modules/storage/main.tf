@@ -5,8 +5,7 @@ resource "random_string" "storage_suffix" {
   upper   = false
 }
 
-# Storage Account for MongoDB backups and config
-# NOT for application persistent storage - todo-app is stateless!
+# Storage Account for MongoDB backups and configuration files.
 resource "azurerm_storage_account" "main" {
   name                     = "st${replace(var.naming_prefix, "-", "")}${random_string.storage_suffix.result}"
   resource_group_name      = var.resource_group_name

@@ -320,9 +320,15 @@ jobs:
 
       - name: Get AKS Credentials
         run: |
+          # Get values from environment variables instead of job outputs
+          RESOURCE_GROUP="${{ env.TF_VAR_resource_group_name }}"
+          AKS_NAME="aks-${{ env.TF_VAR_naming_prefix }}"
+
+          echo "Getting credentials for AKS cluster: $AKS_NAME in resource group: $RESOURCE_GROUP"
+
           az aks get-credentials \
-            --resource-group ${{ needs.terraform-apply.outputs.resource_group_name }} \
-            --name ${{ needs.terraform-apply.outputs.aks_cluster_name }} \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$AKS_NAME" \
             --overwrite-existing
 
       - name: Install ArgoCD
