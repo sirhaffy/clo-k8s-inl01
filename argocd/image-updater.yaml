@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-image-updater
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argocd-image-updater
+    targetRevision: 0.9.1
+    helm:
+      values: |
+        config:
+          # Log level
+          logLevel: info
+
+          # ArgoCD settings
+          argocd:
+            serverAddress: argocd-server.argocd.svc.cluster.local
+            insecure: true
+
+          # Registry credentials (optional)
+          registries:
+            - name: docker.io
+              api_url: https://registry-1.docker.io
+              prefix: docker.io
+
+        # Resource configuration
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+        # Check for updates every 2 minutes
+        image:
+          tag: v0.12.2
+
+        # Service account
+        serviceAccount:
+          create: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

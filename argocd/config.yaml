@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cmd-params-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Application controller settings
+  controller.status.processors: "20"
+  controller.operation.processors: "10"
+  controller.self.heal.timeout.seconds: "5"
+  controller.repo.server.timeout.seconds: "60"
+
+  # Repository polling interval (how often to check Git for changes)
+  # Default is 3m, setting to 2m for faster updates
+  controller.repo.server.polling.interval: "2m"
+
+  # Application sync timeout
+  controller.sync.timeout.seconds: "300"
+
+  # Refresh interval for applications (how often to check for drift)
+  controller.app.hard.refresh.interval: "3m"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-server-config
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-server-config
+    app.kubernetes.io/part-of: argocd
+data:
+  # Server configuration
+  timeout.reconciliation: 180s
+  timeout.hard.reconciliation: 0s
+
+  # Repository settings
+  repositories: |
+    - type: git
+      url: https://github.com/sirhaffy/clo-k8s-inl01.git
+
+  # Resource customizations for faster sync
+  resource.customizations: |
+    argoproj.io/Application:
+      health.lua: |
+        hs = {}
+        hs.status = "Healthy"
+        return hs

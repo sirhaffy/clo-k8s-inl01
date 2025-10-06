@@ -6,6 +6,15 @@ metadata:
   labels:
     app.kubernetes.io/name: todo-app
     app.kubernetes.io/component: application
+  annotations:
+    # ArgoCD Image Updater configuration
+    argocd-image-updater.argoproj.io/image-list: "todo-app=haffy/todo-app"
+    argocd-image-updater.argoproj.io/write-back-method: "git"
+    argocd-image-updater.argoproj.io/git-branch: "master"
+    argocd-image-updater.argoproj.io/update-strategy: "semver"
+    argocd-image-updater.argoproj.io/write-back-target: "helm/todo-app/values.yaml:image.tag"
+    # Git credentials for write-back
+    argocd-image-updater.argoproj.io/git-repository: "https://github.com/sirhaffy/clo-k8s-inl01.git"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -20,8 +29,7 @@ spec:
       valueFiles:
         - values.yaml
       parameters:
-        - name: image.tag
-          value: "latest"
+        # Remove image.tag override - let Image Updater manage it via values.yaml
         - name: replicaCount
           value: "2"
 
@@ -47,6 +55,16 @@ spec:
         duration: 5s         # Initial retry delay
         factor: 2            # Backoff factor
         maxDuration: 3m      # Maximum retry delay
+
+  # Refresh configuration - how often ArgoCD checks for changes
+  info:
+    - name: 'Refresh Interval'
+      value: '3m'          # Check for Git changes every 3 minutes
+
+  # Source refresh configuration
+  annotations:
+    argocd.argoproj.io/refresh: 'hard'  # Force refresh cache
+    argocd.argoproj.io/sync-wave: '0'   # Sync priority
 
   # Health check configuration
   ignoreDifferences:
