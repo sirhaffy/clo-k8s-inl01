@@ -35,6 +35,21 @@ output "application_gateway_public_ip" {
   value       = module.application_gateway.public_ip_address
 }
 
+output "application_gateway_name" {
+  description = "Name of the Application Gateway"
+  value       = module.application_gateway.name
+}
+
+output "aks_managed_identity_id" {
+  description = "AKS Managed Identity ID"
+  value       = module.aks.managed_identity_id
+}
+
+output "aks_kubelet_identity_object_id" {
+  description = "AKS Kubelet Identity Object ID"
+  value       = module.aks.kubelet_identity_object_id
+}
+
 # Sensitive outputs
 output "kube_config" {
   description = "Kubernetes configuration for kubectl access"
@@ -55,7 +70,9 @@ output "connect_commands" {
     az_login           = "az login"
     get_credentials    = "az aks get-credentials --resource-group ${module.resource_group.name} --name ${module.aks.cluster_name}"
     check_nodes        = "kubectl get nodes"
+    check_autoscaling  = "az aks nodepool show --cluster-name ${module.aks.cluster_name} --resource-group ${module.resource_group.name} --name default"
     deploy_mongodb     = "helm repo add bitnami https://charts.bitnami.com/bitnami && helm install mongodb bitnami/mongodb --namespace default"
+    access_todo_app    = "curl -H 'Host: localhost' http://${module.application_gateway.public_ip_address}"
   }
 }
 
@@ -66,6 +83,9 @@ output "next_steps" {
 
     Azure Infrastructure deployed successfully!
 
+    Application Gateway Public IP: ${module.application_gateway.public_ip_address}
+    AKS Auto-scaling: Enabled (Min: 2, Max: 5 nodes)
+
     Next Steps:
 
     1. Connect to AKS cluster:
@@ -74,13 +94,19 @@ output "next_steps" {
          "kubectl get nodes"
        ])}
 
-    2. Deploy MongoDB:
+    2. Access Todo App:
        ${join("\n       ", [
-         "helm repo add bitnami https://charts.bitnami.com/bitnami",
-         "helm install mongodb bitnami/mongodb --namespace default"
+         "curl -H 'Host: localhost' http://${module.application_gateway.public_ip_address}",
+         "# Or open in browser: http://${module.application_gateway.public_ip_address}"
        ])}
 
-    3. Update Key Vault secrets:
+    3. Check auto-scaling status:
+       ${join("\n       ", [
+         "az aks nodepool show --cluster-name ${module.aks.cluster_name} --resource-group ${module.resource_group.name} --name default",
+         "kubectl get nodes -w  # Watch nodes scale"
+       ])}
+
+    4. Update Key Vault secrets:
        # Go to Azure Portal -> ${module.key_vault.name} -> Secrets
        # Update: mongodb-connection-string, dockerhub-token
 

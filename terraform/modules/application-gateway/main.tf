@@ -1,10 +1,3 @@
-# Data source to get AKS subnet information
-data "azurerm_subnet" "aks" {
-  name                 = "aks-subnet"
-  virtual_network_name = split("/", var.aks_subnet_id)[8]
-  resource_group_name  = split("/", var.aks_subnet_id)[4]
-}
-
 # Data source to get AKS node IPs dynamically
 data "azurerm_kubernetes_cluster" "aks" {
   name                = "aks-${var.naming_prefix}"
