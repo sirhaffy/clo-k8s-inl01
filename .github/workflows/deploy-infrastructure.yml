@@ -96,18 +96,29 @@ jobs:
 
           terraform validate
 
-      - name: Import Existing Resource Group (if needed)
+      - name: Check if Resource Group exists in state
         working-directory: ./terraform
+        id: check_rg
         continue-on-error: true
         run: |
-          echo "Attempting to import existing resource group..."
+          if terraform state show module.resource_group.azurerm_resource_group.main; then
+            echo "rg_in_state=true" >> $GITHUB_OUTPUT
+          else
+            echo "rg_in_state=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Import Existing Resource Group (if needed)
+        if: steps.check_rg.outputs.rg_in_state == 'false'
+        working-directory: ./terraform
+        run: |
+          echo "Importing existing resource group into state..."
           terraform import \
             -var="environment=${{ env.TF_VAR_environment }}" \
             -var="location=${{ env.TF_VAR_location }}" \
             -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
             -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
             module.resource_group.azurerm_resource_group.main \
-            "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}" || echo "Resource group not found or already in state"
+            "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}" || echo "Import failed, resource group will be created"
 
       - name: Terraform Plan
         id: plan
