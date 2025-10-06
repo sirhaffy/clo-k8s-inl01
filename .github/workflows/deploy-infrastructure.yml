@@ -76,29 +76,10 @@ jobs:
               azurerm_resource_group.terraform_state /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_BACKEND_RESOURCE_GROUP }} || true
           fi
 
-          # Try to import storage account if it exists
-          if az storage account show --name ${{ env.TF_BACKEND_STORAGE_ACCOUNT }} --resource-group ${{ env.TF_BACKEND_RESOURCE_GROUP }} &>/dev/null; then
-            echo "Storage account exists, attempting import..."
-            terraform import -var="resource_group_name=${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
-              -var="location=${{ env.TF_VAR_location }}" \
-              -var="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
-              -var="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
-              -var="project_name=${{ secrets.PROJECT_PREFIX || 'clo-k8s-inl01' }}" \
-              -var="key_vault_name=kv-${{ secrets.PROJECT_PREFIX || 'clo-k8s-inl01' }}-tfstate" \
-              azurerm_storage_account.terraform_state /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_BACKEND_RESOURCE_GROUP }}/providers/Microsoft.Storage/storageAccounts/${{ env.TF_BACKEND_STORAGE_ACCOUNT }} || true
-          fi
+          # Skip storage account import due to Azure AD authentication conflicts
+          echo "Skipping storage account import - will be managed by Terraform plan/apply"
 
-          # Try to import container if it exists
-          if az storage container show --name ${{ env.TF_BACKEND_CONTAINER }} --account-name ${{ env.TF_BACKEND_STORAGE_ACCOUNT }} --auth-mode login &>/dev/null; then
-            echo "Storage container exists, attempting import..."
-            terraform import -var="resource_group_name=${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
-              -var="location=${{ env.TF_VAR_location }}" \
-              -var="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
-              -var="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
-              -var="project_name=${{ secrets.PROJECT_PREFIX || 'clo-k8s-inl01' }}" \
-              -var="key_vault_name=kv-${{ secrets.PROJECT_PREFIX || 'clo-k8s-inl01' }}-tfstate" \
-              azurerm_storage_container.terraform_state https://${{ env.TF_BACKEND_STORAGE_ACCOUNT }}.blob.core.windows.net/${{ env.TF_BACKEND_CONTAINER }} || true
-          fi          terraform plan -out=bootstrap.tfplan \
+          terraform plan -out=bootstrap.tfplan \
             -var="resource_group_name=${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
             -var="location=${{ env.TF_VAR_location }}" \
             -var="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
