@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/sirhaffy/clo-k8s-inl01.git
     targetRevision: HEAD
-    path: todo-app/helm/todo-app
+    path: helm/todo-app
     helm:
       valueFiles:
         - values.yaml
