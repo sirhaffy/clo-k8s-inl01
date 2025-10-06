@@ -179,27 +179,27 @@ jobs:
 
           # Check AKS cluster
           if ! az aks show --name "aks-${{ secrets.PROJECT_PREFIX }}" --resource-group "${{ env.TF_VAR_resource_group_name }}" &>/dev/null; then
-            echo "❌ AKS cluster missing"
+            echo "AKS cluster missing"
             MISSING_RESOURCES=true
           fi
 
           # Check Key Vault (with random suffix pattern)
           if ! az keyvault list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?starts_with(name, 'kv-clok8sinl01')]" --output tsv | head -1 &>/dev/null; then
-            echo "❌ Key Vault missing"
+            echo "Key Vault missing"
             MISSING_RESOURCES=true
           fi
 
           # Check Storage Account (with random suffix pattern)
           if ! az storage account list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?starts_with(name, 'stclok8sinl01') && !ends_with(name, 'backend')]" --output tsv | head -1 &>/dev/null; then
-            echo "❌ Storage Account missing"
+            echo "Storage Account missing"
             MISSING_RESOURCES=true
           fi
 
           if [ "$MISSING_RESOURCES" = true ]; then
-            echo "⚠️  Critical resources missing - forcing apply"
+            echo "Critical resources missing - forcing apply"
             echo "force_apply=true" >> $GITHUB_OUTPUT
           else
-            echo "✅ All critical resources exist"
+            echo "All critical resources exist"
             echo "force_apply=false" >> $GITHUB_OUTPUT
           fi
 
@@ -225,9 +225,12 @@ jobs:
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
-    needs: terraform-plan
+    needs: [terraform-plan, verify-infrastructure]
     if: |
-      needs.terraform-plan.outputs.tfplan_exitcode == '2'
+      always() && (
+        needs.terraform-plan.outputs.tfplan_exitcode == '2' ||
+        (needs.verify-infrastructure.result == 'success' && needs.verify-infrastructure.outputs.force_apply == 'true')
+      )
     outputs:
       resource_group_name: ${{ steps.terraform.outputs.resource_group_name }}
       aks_cluster_name: ${{ steps.terraform.outputs.aks_cluster_name }}
@@ -278,72 +281,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Next: ArgoCD installation" >> $GITHUB_STEP_SUMMARY
 
-  terraform-force-apply:
-    name: Terraform Force Apply
-    runs-on: ubuntu-latest
-    needs: verify-infrastructure
-    if: |
-      needs.verify-infrastructure.result == 'success' &&
-      needs.verify-infrastructure.outputs.force_apply == 'true'
-    outputs:
-      resource_group_name: ${{ steps.terraform.outputs.resource_group_name }}
-      aks_cluster_name: ${{ steps.terraform.outputs.aks_cluster_name }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
-          terraform_wrapper: false
-
-      - uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: ./terraform
-
-      - name: Terraform Init
-        working-directory: ./terraform
-        run: |
-          terraform init \
-            -backend-config="resource_group_name=${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
-            -backend-config="storage_account_name=${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
-            -backend-config="container_name=${{ env.TF_BACKEND_CONTAINER }}" \
-            -backend-config="key=terraform.tfstate"
-
-      - name: Terraform Apply
-        id: terraform
-        working-directory: ./terraform
-      - name: Terraform Apply
-        id: terraform
-        working-directory: ./terraform
-        run: |
-          terraform apply -auto-approve tfplan
-          echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
-          echo "aks_cluster_name=$(terraform output -raw aks_cluster_name)" >> $GITHUB_OUTPUT
-
-      - name: Force Apply Summary
-        run: |
-          echo "## Infrastructure Force Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Environment | ${{ env.TF_VAR_environment }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Location | ${{ env.TF_VAR_location }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Resource Group | \`${{ steps.terraform.outputs.resource_group_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| AKS Cluster | \`${{ steps.terraform.outputs.aks_cluster_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Reason | Missing resources detected |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Next: ArgoCD installation" >> $GITHUB_STEP_SUMMARY
-
   install-argocd:
     name: Install ArgoCD
     runs-on: ubuntu-latest
-    needs: [terraform-apply, terraform-force-apply]
-    if: always() && (needs.terraform-apply.result == 'success' || needs.terraform-force-apply.result == 'success')
+    needs: terraform-apply
     steps:
       - uses: actions/checkout@v4
 
@@ -353,21 +294,10 @@ jobs:
 
       - name: Get AKS Credentials
         run: |
-          # Get outputs from whichever job succeeded
-          if [ "${{ needs.terraform-apply.result }}" == "success" ]; then
-            RESOURCE_GROUP="${{ needs.terraform-apply.outputs.resource_group_name }}"
-            AKS_CLUSTER="${{ needs.terraform-apply.outputs.aks_cluster_name }}"
-          else
-            RESOURCE_GROUP="${{ needs.terraform-force-apply.outputs.resource_group_name }}"
-            AKS_CLUSTER="${{ needs.terraform-force-apply.outputs.aks_cluster_name }}"
-          fi
-
           az aks get-credentials \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$AKS_CLUSTER" \
-            --overwrite-existing
-
-      - name: Install ArgoCD
+            --resource-group ${{ needs.terraform-apply.outputs.resource_group_name }} \
+            --name ${{ needs.terraform-apply.outputs.aks_cluster_name }} \
+            --overwrite-existing      - name: Install ArgoCD
         run: |
           kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
