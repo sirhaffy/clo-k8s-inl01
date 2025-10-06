@@ -96,39 +96,73 @@ jobs:
 
           terraform validate
 
-      - name: Check if Resource Group exists in state
+      - name: Check if Resource Group exists in Azure and State
         working-directory: ./terraform
         id: check_rg
-        continue-on-error: true
         run: |
-          if terraform state show module.resource_group.azurerm_resource_group.main; then
-            echo "rg_in_state=true" >> $GITHUB_OUTPUT
+          # Check if RG exists in Azure
+          if az group show --name "${{ env.TF_VAR_resource_group_name }}" &>/dev/null; then
+            echo "Resource Group exists in Azure"
+            RG_EXISTS_AZURE=true
           else
-            echo "rg_in_state=false" >> $GITHUB_OUTPUT
+            echo "Resource Group does NOT exist in Azure"
+            RG_EXISTS_AZURE=false
           fi
 
-      - name: Import Existing Resource Group (if needed)
-        if: steps.check_rg.outputs.rg_in_state == 'false'
+          # Check if RG exists in Terraform state
+          if terraform state show module.resource_group.azurerm_resource_group.main &>/dev/null; then
+            echo "Resource Group exists in Terraform state"
+            RG_IN_STATE=true
+          else
+            echo "Resource Group does NOT exist in Terraform state"
+            RG_IN_STATE=false
+          fi
+
+          # Set output: import needed if exists in Azure but not in state
+          if [ "$RG_EXISTS_AZURE" = true ] && [ "$RG_IN_STATE" = false ]; then
+            echo "import_needed=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Import required: RG exists in Azure but not in state"
+          else
+            echo "import_needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Import Existing Resource Group
+        if: steps.check_rg.outputs.import_needed == 'true'
         working-directory: ./terraform
         run: |
-          echo "Importing existing resource group into state..."
+          echo "📥 Importing existing resource group into Terraform state..."
           terraform import \
             -var="environment=${{ env.TF_VAR_environment }}" \
             -var="location=${{ env.TF_VAR_location }}" \
             -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
             -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
             module.resource_group.azurerm_resource_group.main \
-            "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}" || echo "Import failed, resource group will be created"
+            "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}"
+          echo "✅ Resource Group imported successfully"
 
       - name: Terraform Plan
         id: plan
         working-directory: ./terraform
         run: |
+          set +e  # Don't exit on error immediately
           terraform plan -detailed-exitcode -no-color -out tfplan \
             -var="environment=${{ env.TF_VAR_environment }}" \
             -var="location=${{ env.TF_VAR_location }}" \
             -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
             -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}"
+
+          PLAN_EXIT_CODE=$?
+          echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+
+          # Exit codes: 0 = no changes, 1 = error, 2 = changes planned
+          if [ $PLAN_EXIT_CODE -eq 1 ]; then
+            echo "❌ Terraform plan failed with errors"
+            exit 1
+          elif [ $PLAN_EXIT_CODE -eq 2 ]; then
+            echo "✅ Plan successful - changes detected"
+          else
+            echo "✅ Plan successful - no changes needed"
+          fi
 
       - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
