@@ -43,13 +43,13 @@ spec:
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
         {{- if .Values.mongodb.enabled }}
-        - name: MONGODB_CONNECTION
+        - name: MONGODB_URI
           valueFrom:
             secretKeyRef:
               name: {{ .Values.mongodb.auth.existingSecret | quote }}
               key: "connection-string"
         {{- else if .Values.env.MONGODB_CONNECTION }}
-        - name: MONGODB_CONNECTION
+        - name: MONGODB_URI
           {{- if .Values.env.MONGODB_CONNECTION.secretKeyRef }}
           valueFrom:
             secretKeyRef:

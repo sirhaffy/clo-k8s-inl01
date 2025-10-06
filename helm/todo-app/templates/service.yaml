@@ -12,3 +12,4 @@ spec:
     protocol: TCP
   selector:
     {{- include "todo-app.selectorLabels" . | nindent 4 }}
+    # Exclude MongoDB pods by not selecting component: mongodb
