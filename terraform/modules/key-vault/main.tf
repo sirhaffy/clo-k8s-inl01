@@ -1,3 +1,10 @@
+# Random suffix for unique Key Vault name
+resource "random_string" "kv_suffix" {
+  length  = 4
+  special = false
+  upper   = false
+}
+
 # Random password for MongoDB (generated securely)
 resource "random_password" "mongodb_password" {
   length  = 16
@@ -6,7 +13,7 @@ resource "random_password" "mongodb_password" {
 
 # Key Vault for secrets management
 resource "azurerm_key_vault" "main" {
-  name                = "kv-${var.naming_prefix}"
+  name                = "kv-${replace(var.naming_prefix, "-", "")}${random_string.kv_suffix.result}"
   location            = var.location
   resource_group_name = var.resource_group_name
   tenant_id           = var.tenant_id
