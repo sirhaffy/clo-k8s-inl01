@@ -15,6 +15,9 @@ metadata:
     argocd-image-updater.argoproj.io/write-back-target: "helm/todo-app/values.yaml:image.tag"
     # Git credentials for write-back
     argocd-image-updater.argoproj.io/git-repository: "https://github.com/sirhaffy/clo-k8s-inl01.git"
+    # Source refresh configuration
+    argocd.argoproj.io/refresh: 'hard'  # Force refresh cache
+    argocd.argoproj.io/sync-wave: '0'   # Sync priority
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -60,11 +63,6 @@ spec:
   info:
     - name: 'Refresh Interval'
       value: '3m'          # Check for Git changes every 3 minutes
-
-  # Source refresh configuration
-  annotations:
-    argocd.argoproj.io/refresh: 'hard'  # Force refresh cache
-    argocd.argoproj.io/sync-wave: '0'   # Sync priority
 
   # Health check configuration
   ignoreDifferences:
