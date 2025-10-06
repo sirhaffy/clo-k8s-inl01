@@ -100,13 +100,5 @@ resource "azurerm_application_gateway" "main" {
     backend_http_settings_name = "appgw-be-htst"
   }
 
-  # WAF Configuration (for security)
-  waf_configuration {
-    enabled          = false  # Enable for production
-    firewall_mode    = "Prevention"
-    rule_set_type    = "OWASP"
-    rule_set_version = "3.2"
-  }
-
   tags = var.tags
 }
