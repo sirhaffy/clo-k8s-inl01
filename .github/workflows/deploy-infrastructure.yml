@@ -16,10 +16,7 @@ on:
 env:
   ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
   ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
-  ARM_SUBSCRIPTION_ID: ${{ fromJs          echo "### ArgoCD Login" >> $GITHUB_STEP_SUMMARY
-          echo "- **Username:** \`admin\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Password:** Check GitHub Actions logs or run:" >> $GITHUB_STEP_SUMMARY
-          echo "  \`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 --decode; echo\`" >> $GITHUB_STEP_SUMMARYecrets.AZURE_CREDENTIALS).subscriptionId }}
+  ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
   ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
   TF_VAR_environment: 'prod'
   TF_VAR_location: ${{ secrets.AZURE_LOCATION }}
