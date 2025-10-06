@@ -272,6 +272,15 @@ jobs:
                     -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}" \
                     module.key_vault.azurerm_key_vault_access_policy.aks_managed_identity[0] \
                     "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.KeyVault/vaults/$KV_NAME/objectId/$AKS_IDENTITY_ID" || echo "Import failed, continuing..."
+
+                  # Create new plan after import
+                  echo "Creating new plan after Key Vault import..."
+                  terraform plan -no-color -out tfplan \
+                    -var="environment=${{ env.TF_VAR_environment }}" \
+                    -var="location=${{ env.TF_VAR_location }}" \
+                    -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+                    -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}"
+                  echo "New plan created after import"
                 else
                   echo "Key Vault access policy already in state"
                 fi
