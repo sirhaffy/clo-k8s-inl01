@@ -6,6 +6,11 @@ variable "project_name" {
   default     = "todo-app"
 }
 
+variable "naming_prefix" {
+  description = "Naming prefix for all resources"
+  type        = string
+}
+
 variable "location" {
   description = "Azure region where resources will be created"
   type        = string

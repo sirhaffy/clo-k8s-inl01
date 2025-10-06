@@ -112,10 +112,11 @@ module "aks" {
   tags                  = local.common_tags
 
   # AKS configuration
-  kubernetes_version = var.kubernetes_version
-  min_node_count    = var.min_node_count
-  max_node_count    = var.max_node_count
-  vm_size          = var.vm_size
+  kubernetes_version     = var.kubernetes_version
+  min_node_count        = var.min_node_count
+  max_node_count        = var.max_node_count
+  vm_size               = var.vm_size
+  admin_group_object_ids = []  # Tom lista för nu, kan konfigureras senare
 }
 
 # RBAC Module
