@@ -1,9 +1,8 @@
 # Terraform variables - can be overridden with terraform.tfvars or -var flags
 
-variable "project_name" {
-  description = "Name of the project"
+variable "resource_group_name" {
+  description = "Name of the main resource group"
   type        = string
-  default     = "todo-app"
 }
 
 variable "naming_prefix" {

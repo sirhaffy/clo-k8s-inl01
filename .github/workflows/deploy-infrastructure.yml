@@ -26,6 +26,7 @@ env:
   ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
   TF_VAR_environment: ${{ github.event.inputs.environment || 'dev' }}
   TF_VAR_location: ${{ secrets.AZURE_LOCATION }}
+  TF_VAR_resource_group_name: ${{ secrets.TF_BACKEND_RESOURCE_GROUP }}
   TF_VAR_naming_prefix: "${{ secrets.PROJECT_PREFIX }}-${{ github.event.inputs.environment || 'dev' }}"
   TF_BACKEND_RESOURCE_GROUP: ${{ secrets.TF_BACKEND_RESOURCE_GROUP }}
   TF_BACKEND_STORAGE_ACCOUNT: ${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}
@@ -108,6 +109,7 @@ jobs:
           terraform plan -detailed-exitcode -no-color -out tfplan \
             -var="environment=${{ env.TF_VAR_environment }}" \
             -var="location=${{ env.TF_VAR_location }}" \
+            -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
             -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}"
 
       - name: Upload Terraform Plan

@@ -40,19 +40,17 @@ data "azurerm_client_config" "current" {}
 locals {
   common_tags = {
     Environment = var.environment
-    Project     = "todo-app"
+    Project     = var.naming_prefix
     ManagedBy   = "terraform"
     Owner       = "haffy"
   }
-
-  naming_prefix = "${var.project_name}-${var.environment}"
 }
 
 # Resource Group Module
 module "resource_group" {
   source = "./modules/resource-group"
 
-  name     = "rg-${local.naming_prefix}"
+  name     = var.resource_group_name
   location = var.location
   tags     = local.common_tags
 }
@@ -63,7 +61,7 @@ module "networking" {
 
   resource_group_name = module.resource_group.name
   location           = module.resource_group.location
-  naming_prefix      = local.naming_prefix
+  naming_prefix      = var.naming_prefix
   tags              = local.common_tags
 }
 
@@ -73,7 +71,7 @@ module "key_vault" {
 
   resource_group_name = module.resource_group.name
   location           = module.resource_group.location
-  naming_prefix      = local.naming_prefix
+  naming_prefix      = var.naming_prefix
   tenant_id          = data.azurerm_client_config.current.tenant_id
   object_id          = data.azurerm_client_config.current.object_id
   tags              = local.common_tags
@@ -85,7 +83,7 @@ module "monitoring" {
 
   resource_group_name = module.resource_group.name
   location           = module.resource_group.location
-  naming_prefix      = local.naming_prefix
+  naming_prefix      = var.naming_prefix
   tags              = local.common_tags
 }
 
@@ -95,7 +93,7 @@ module "storage" {
 
   resource_group_name = module.resource_group.name
   location           = module.resource_group.location
-  naming_prefix      = local.naming_prefix
+  naming_prefix      = var.naming_prefix
   tags              = local.common_tags
 }
 
@@ -105,7 +103,7 @@ module "aks" {
 
   resource_group_name     = module.resource_group.name
   location               = module.resource_group.location
-  naming_prefix          = local.naming_prefix
+  naming_prefix          = var.naming_prefix
   subnet_id             = module.networking.aks_subnet_id
   log_analytics_workspace_id = module.monitoring.workspace_id
   key_vault_id          = module.key_vault.id
