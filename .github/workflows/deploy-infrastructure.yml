@@ -283,7 +283,7 @@ jobs:
               echo "Resource group already in state"
             fi
           else
-            echo "ℹResource group will be created"
+            echo "Resource group will be created"
           fi
 
       - name: Terraform Apply
