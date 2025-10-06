@@ -30,11 +30,6 @@ output "storage_account_name" {
   value       = module.storage.storage_account_name
 }
 
-output "argocd_namespace" {
-  description = "ArgoCD namespace"
-  value       = module.argocd.namespace
-}
-
 # Sensitive outputs
 output "kube_config" {
   description = "Kubernetes configuration for kubectl access"
@@ -55,8 +50,6 @@ output "connect_commands" {
     az_login           = "az login"
     get_credentials    = "az aks get-credentials --resource-group ${module.resource_group.name} --name ${module.aks.cluster_name}"
     check_nodes        = "kubectl get nodes"
-    argocd_password    = "kubectl -n ${module.argocd.namespace} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
-    argocd_port_forward = "kubectl port-forward svc/argocd-server -n ${module.argocd.namespace} 8080:443"
     deploy_mongodb     = "helm repo add bitnami https://charts.bitnami.com/bitnami && helm install mongodb bitnami/mongodb --namespace default"
   }
 }
@@ -76,27 +69,20 @@ output "next_steps" {
          "kubectl get nodes"
        ])}
 
-    2. Access ArgoCD:
+    2. Deploy MongoDB:
        ${join("\n       ", [
-         "kubectl port-forward svc/argocd-server -n ${module.argocd.namespace} 8080:443",
-         "# Default admin password:",
-         "kubectl get secret argocd-initial-admin-secret -n ${module.argocd.namespace} -o jsonpath=\"{.data.password}\" | base64 -d"
+         "helm repo add bitnami https://charts.bitnami.com/bitnami",
+         "helm install mongodb bitnami/mongodb --namespace default"
        ])}
 
     3. Update Key Vault secrets:
        # Go to Azure Portal -> ${module.key_vault.name} -> Secrets
        # Update: mongodb-connection-string, dockerhub-token
 
-    4. Deploy MongoDB:
-       ${join("\n       ", [
-         "helm repo add bitnami https://charts.bitnami.com/bitnami",
-         "helm install mongodb bitnami/mongodb --namespace default"
-       ])}
-
-    5. Configure ArgoCD Application for todo-app Helm chart
-
     Key Vault: ${module.key_vault.vault_uri}
     Monitoring: Check Azure Portal for Log Analytics and Application Insights
+
+    Note: ArgoCD will be installed automatically via GitHub Actions workflow
 
   EOT
 }

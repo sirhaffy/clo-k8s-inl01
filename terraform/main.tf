@@ -125,12 +125,3 @@ module "rbac" {
   aks_principal_id   = module.aks.principal_id
   key_vault_id       = module.key_vault.id
 }
-
-# ArgoCD Module
-module "argocd" {
-  source = "./modules/argocd"
-
-  cluster_name           = module.aks.cluster_name
-  resource_group_name    = module.resource_group.name
-  kube_config           = module.aks.kube_config
-}
