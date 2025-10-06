@@ -105,3 +105,47 @@ resource "helm_release" "argocd" {
 
   depends_on = [kubernetes_namespace.argocd]
 }
+
+# Nginx Ingress Controller namespace
+resource "kubernetes_namespace" "nginx_ingress" {
+  metadata {
+    name = "nginx-ingress"
+
+    labels = {
+      name = "nginx-ingress"
+    }
+  }
+}
+
+# Nginx Ingress Controller Helm Chart installation
+resource "helm_release" "nginx_ingress" {
+  name       = "nginx-ingress"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  version    = "4.8.0"
+  namespace  = kubernetes_namespace.nginx_ingress.metadata[0].name
+
+  values = [
+    yamlencode({
+      controller = {
+        service = {
+          type = "LoadBalancer"
+        }
+        resources = {
+          requests = {
+            cpu    = "100m"
+            memory = "128Mi"
+          }
+          limits = {
+            cpu    = "200m"
+            memory = "256Mi"
+          }
+        }
+      }
+    })
+  ]
+
+  timeout = 600
+
+  depends_on = [kubernetes_namespace.nginx_ingress]
+}
