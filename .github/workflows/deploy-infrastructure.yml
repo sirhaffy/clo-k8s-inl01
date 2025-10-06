@@ -138,15 +138,12 @@ jobs:
         run: |
           if [ "${{ steps.plan.outputs.exitcode }}" == "0" ]; then
             STATUS="No changes detected"
-            ICON="✓"
             NEXT_STEP="Will verify infrastructure"
           elif [ "${{ steps.plan.outputs.exitcode }}" == "2" ]; then
             STATUS="Changes detected"
-            ICON="→"
             NEXT_STEP="Will proceed to apply"
           else
             STATUS="Plan failed"
-            ICON="✗"
             NEXT_STEP="Fix errors and retry"
           fi
 
@@ -207,11 +204,9 @@ jobs:
         run: |
           if [ "${{ steps.verify.outputs.force_apply }}" == "true" ]; then
             STATUS="Missing resources detected"
-            ICON="⚠️"
             NEXT_STEP="Will force apply"
           else
             STATUS="All resources exist"
-            ICON="✅"
             NEXT_STEP="No action needed"
           fi
 
@@ -275,6 +270,15 @@ jobs:
                 module.resource_group.azurerm_resource_group.main \
                 "/subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}"
               echo "Resource group imported successfully"
+
+              # Create new plan after import
+              echo "Creating new plan after import..."
+              terraform plan -no-color -out tfplan \
+                -var="environment=${{ env.TF_VAR_environment }}" \
+                -var="location=${{ env.TF_VAR_location }}" \
+                -var="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+                -var="naming_prefix=${{ env.TF_VAR_naming_prefix }}"
+              echo "New plan created"
             else
               echo "Resource group already in state"
             fi
