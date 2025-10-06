@@ -34,13 +34,13 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Default node pool
   default_node_pool {
-    name                = "default"
-    node_count          = var.node_count
-    vm_size             = var.vm_size
-    vnet_subnet_id      = var.subnet_id
+    name               = "default"
+    node_count         = var.node_count
+    vm_size            = var.vm_size
+    vnet_subnet_id     = var.subnet_id
     auto_scaling_enabled = true
-    min_count           = 1
-    max_count           = 5
+    min_count          = 1
+    max_count          = 5
 
     upgrade_settings {
       max_surge = "10%"
