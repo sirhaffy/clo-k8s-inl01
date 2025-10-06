@@ -31,6 +31,7 @@ resource "azurerm_storage_account" "main" {
 # File Share for MongoDB backups (optional)
 resource "azurerm_storage_share" "mongodb_backups" {
   name                 = "mongodb-backups"
-  storage_account_name = azurerm_storage_account.main.name
+#   storage_account_name = azurerm_storage_account.main.name <-- Depricated
+  storage_account_id   = azurerm_storage_account.main.id
   quota                = 20  # 20 GB for backups
 }
