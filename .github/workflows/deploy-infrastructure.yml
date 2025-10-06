@@ -21,7 +21,7 @@ env:
   TF_VAR_environment: 'prod'
   TF_VAR_location: ${{ secrets.AZURE_LOCATION }}
   TF_VAR_resource_group_name: ${{ secrets.TF_BACKEND_RESOURCE_GROUP }}
-  TF_VAR_naming_prefix: "${{ secrets.PROJECT_PREFIX }}"
+  TF_VAR_naming_prefix: ${{ secrets.PROJECT_PREFIX }}
   TF_BACKEND_RESOURCE_GROUP: ${{ secrets.TF_BACKEND_RESOURCE_GROUP }}
   TF_BACKEND_STORAGE_ACCOUNT: ${{ secrets.TF_BACKEND_STORAGE_ACCOUNT }}
   TF_BACKEND_CONTAINER: ${{ secrets.TF_BACKEND_CONTAINER }}
