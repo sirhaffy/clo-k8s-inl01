@@ -64,7 +64,33 @@ resource "azurerm_network_security_group" "aks" {
     destination_address_prefix = "10.0.1.0/24"
   }
 
-  # Blockera direkt internet access
+  # Allow HTTP from Internet for LoadBalancer services
+  security_rule {
+    name                       = "AllowHTTPFromInternet"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "10.0.1.0/24"
+  }
+
+  # Allow HTTPS from Internet for LoadBalancer services
+  security_rule {
+    name                       = "AllowHTTPSFromInternet"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "10.0.1.0/24"
+  }
+
+  # Block other direct internet access
   security_rule {
     name                       = "DenyDirectInternet"
     priority                   = 4000
