@@ -297,7 +297,9 @@ jobs:
           az aks get-credentials \
             --resource-group ${{ needs.terraform-apply.outputs.resource_group_name }} \
             --name ${{ needs.terraform-apply.outputs.aks_cluster_name }} \
-            --overwrite-existing      - name: Install ArgoCD
+            --overwrite-existing
+
+      - name: Install ArgoCD
         run: |
           kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
