@@ -21,9 +21,6 @@ resource "azurerm_role_assignment" "key_vault_secrets_user" {
   principal_id         = azurerm_user_assigned_identity.aks.principal_id
 }
 
-# Log Analytics Workspace for monitoring
-# (Uses workspace from monitoring module)
-
 # AKS Cluster
 resource "azurerm_kubernetes_cluster" "main" {
   name                = "aks-${var.naming_prefix}"
@@ -34,13 +31,12 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Default node pool
   default_node_pool {
-    name               = "default"
-    node_count         = var.node_count
-    vm_size            = var.vm_size
-    vnet_subnet_id     = var.subnet_id
+    name                 = "default"
+    vm_size              = var.vm_size
+    vnet_subnet_id       = var.subnet_id
     auto_scaling_enabled = true
-    min_count          = 1
-    max_count          = 5
+    min_count            = var.min_node_count
+    max_count            = var.max_node_count
 
     upgrade_settings {
       max_surge = "10%"

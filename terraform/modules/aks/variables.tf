@@ -35,10 +35,16 @@ variable "kubernetes_version" {
   default     = "1.29.2"
 }
 
-variable "node_count" {
-  description = "Initial node count"
+variable "min_node_count" {
+  description = "Minimum number of nodes for autoscaling"
   type        = number
-  default     = 2
+  default     = 1
+}
+
+variable "max_node_count" {
+  description = "Maximum number of nodes for autoscaling"
+  type        = number
+  default     = 5
 }
 
 variable "vm_size" {
