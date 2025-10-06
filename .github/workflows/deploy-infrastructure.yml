@@ -163,7 +163,7 @@ jobs:
     if: |
       always() && (
         needs.terraform-plan.outputs.tfplan_exitcode == '2' ||
-        (github.event_name == 'push' && contains(github.event.head_commit.modified, 'terraform/'))
+        github.event_name == 'push'
       )
     outputs:
       resource_group_name: ${{ steps.terraform.outputs.resource_group_name }}
