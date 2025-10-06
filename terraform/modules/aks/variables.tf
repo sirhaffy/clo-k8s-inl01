@@ -47,6 +47,12 @@ variable "max_node_count" {
   default     = 5
 }
 
+variable "admin_group_object_ids" {
+  description = "Azure AD group object IDs for AKS admin access"
+  type        = list(string)
+  default     = []
+}
+
 variable "vm_size" {
   description = "VM size for nodes"
   type        = string

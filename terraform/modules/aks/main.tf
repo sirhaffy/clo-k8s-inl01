@@ -31,12 +31,10 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Default node pool
   default_node_pool {
-    name                 = "default"
-    vm_size              = var.vm_size
-    vnet_subnet_id       = var.subnet_id
-    auto_scaling_enabled = true
-    min_count            = var.min_node_count
-    max_count            = var.max_node_count
+    name           = "default"
+    vm_size        = var.vm_size
+    vnet_subnet_id = var.subnet_id
+    node_count     = var.min_node_count
 
     upgrade_settings {
       max_surge = "10%"
@@ -51,11 +49,11 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Network profile
   network_profile {
-    network_plugin      = "azure"
-    network_policy      = "azure"
-    dns_service_ip      = "10.2.0.10"
-    service_cidr        = "10.2.0.0/24"
-    load_balancer_sku   = "standard"
+    network_plugin    = "azure"
+    network_policy    = "azure"
+    dns_service_ip    = "10.2.0.10"
+    service_cidr      = "10.2.0.0/24"
+    load_balancer_sku = "standard"
   }
 
   # Monitoring
@@ -65,14 +63,14 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Azure Active Directory integration
   azure_active_directory_role_based_access_control {
-    admin_group_object_ids = []  # Add Azure AD group IDs here
+    admin_group_object_ids = var.admin_group_object_ids
     azure_rbac_enabled     = true
   }
 
   # Security settings
   role_based_access_control_enabled = true
 
-  # Key Vault Secrets Provider CSI Driver
+  # Key Vault Secrets Provider
   key_vault_secrets_provider {
     secret_rotation_enabled  = true
     secret_rotation_interval = "2m"
