@@ -192,6 +192,12 @@ jobs:
             MISSING_RESOURCES=true
           fi
 
+          # Check Application Gateway
+          if ! az network application-gateway list --resource-group "${{ env.TF_VAR_resource_group_name }}" --query "[?starts_with(name, 'appgw-clok8sinl01')]" --output tsv | head -1 &>/dev/null; then
+            echo "Application Gateway missing"
+            MISSING_RESOURCES=true
+          fi
+
           if [ "$MISSING_RESOURCES" = true ]; then
             echo "Critical resources missing - forcing apply"
             echo "force_apply=true" >> $GITHUB_OUTPUT
