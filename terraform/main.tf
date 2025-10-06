@@ -9,7 +9,7 @@ terraform {
   # - container_name=tfstate
   # - key={environment}/terraform.tfstate
   backend "azurerm" {
-    use_azuread_auth = true  # Use Azure AD authentication (matches storage config)
+    use_azuread_auth = false  # Use Service Principal authentication for GitHub Actions
   }
 
   required_providers {
@@ -25,6 +25,10 @@ terraform {
 }
 
 provider "azurerm" {
+  # Service Principal authentication for GitHub Actions
+  use_cli                = false
+  use_msi                = false
+
   features {
     key_vault {
       purge_soft_delete_on_destroy    = true
