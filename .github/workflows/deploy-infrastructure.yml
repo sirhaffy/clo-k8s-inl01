@@ -3,7 +3,7 @@ name: Deploy Infrastructure to Azure
 on:
   push:
     branches: [master, main]
-    paths: ['terraform/**', '.github/workflows/deploy-infrastructure.yml', 'argocd/**']
+    paths: ['terraform/**', '.github/workflows/deploy-infrastructure.yml', 'argocd/**', 'helm/**']
   workflow_dispatch:
     inputs:
       terraform_action:
