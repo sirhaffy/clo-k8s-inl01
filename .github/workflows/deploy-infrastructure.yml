@@ -410,6 +410,39 @@ jobs:
           sleep 10
           kubectl apply -f argocd/application.yaml
 
+      - name: Update ArgoCD Application with Key Vault Configuration
+        run: |
+          # Get Key Vault information from Azure
+          RESOURCE_GROUP="${{ env.TF_VAR_resource_group_name }}"
+
+          # Find the Key Vault (excluding tfstate vault)
+          KEY_VAULT_NAME=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query "[?!contains(name, 'tfstate')].name" --output tsv | head -1)
+          KEY_VAULT_URI=$(az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.vaultUri" --output tsv)
+          TENANT_ID=$(az account show --query tenantId --output tsv)
+
+          echo "Key Vault Name: $KEY_VAULT_NAME"
+          echo "Key Vault URI: $KEY_VAULT_URI"
+          echo "Tenant ID: $TENANT_ID"
+
+          # Update ArgoCD application with Key Vault parameters
+          kubectl patch application todo-app -n argocd --type merge -p "{
+            \"spec\": {
+              \"source\": {
+                \"helm\": {
+                  \"parameters\": [
+                    {\"name\": \"image.tag\", \"value\": \"latest\"},
+                    {\"name\": \"replicaCount\", \"value\": \"2\"},
+                    {\"name\": \"azure.keyVaultName\", \"value\": \"$KEY_VAULT_NAME\"},
+                    {\"name\": \"azure.keyVaultUri\", \"value\": \"$KEY_VAULT_URI\"},
+                    {\"name\": \"azure.tenantId\", \"value\": \"$TENANT_ID\"}
+                  ]
+                }
+              }
+            }
+          }"
+
+          echo "ArgoCD application updated with Key Vault configuration"
+
       - name: Get ArgoCD Admin Password
         id: argocd_password
         run: |
