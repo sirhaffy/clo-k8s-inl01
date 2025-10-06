@@ -69,12 +69,13 @@ module "networking" {
 module "key_vault" {
   source = "./modules/key-vault"
 
-  resource_group_name = module.resource_group.name
-  location           = module.resource_group.location
-  naming_prefix      = var.naming_prefix
-  tenant_id          = data.azurerm_client_config.current.tenant_id
-  object_id          = data.azurerm_client_config.current.object_id
-  tags              = local.common_tags
+  resource_group_name              = module.resource_group.name
+  location                        = module.resource_group.location
+  naming_prefix                   = var.naming_prefix
+  tenant_id                       = data.azurerm_client_config.current.tenant_id
+  object_id                       = data.azurerm_client_config.current.object_id
+  aks_managed_identity_object_id  = module.aks.kubelet_identity_object_id
+  tags                           = local.common_tags
 }
 
 # Monitoring Module

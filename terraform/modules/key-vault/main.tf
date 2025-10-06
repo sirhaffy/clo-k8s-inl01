@@ -60,6 +60,19 @@ resource "azurerm_key_vault_access_policy" "current_user" {
   ]
 }
 
+# Access Policy for AKS managed identity (if provided)
+resource "azurerm_key_vault_access_policy" "aks_managed_identity" {
+  count = var.aks_managed_identity_object_id != null ? 1 : 0
+
+  key_vault_id = azurerm_key_vault.main.id
+  tenant_id    = var.tenant_id
+  object_id    = var.aks_managed_identity_object_id
+
+  secret_permissions = [
+    "Get", "List"
+  ]
+}
+
 # Standard secrets for todo-app
 resource "azurerm_key_vault_secret" "mongodb_root_password" {
   name         = "mongodb-root-password"

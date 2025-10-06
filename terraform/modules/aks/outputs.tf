@@ -34,3 +34,8 @@ output "principal_id" {
   description = "Principal ID of the AKS managed identity"
   value       = azurerm_user_assigned_identity.aks.principal_id
 }
+
+output "kubelet_identity_object_id" {
+  description = "Object ID of the kubelet identity"
+  value       = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
+}

@@ -23,6 +23,12 @@ variable "object_id" {
   type        = string
 }
 
+variable "aks_managed_identity_object_id" {
+  description = "Object ID of the AKS managed identity (from kubelet identity)"
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
