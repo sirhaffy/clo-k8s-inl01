@@ -109,17 +109,17 @@ resource "helm_release" "argocd" {
 # Nginx Ingress Controller namespace
 resource "kubernetes_namespace" "nginx_ingress" {
   metadata {
-    name = "nginx-ingress"
+    name = "ingress-nginx"
 
     labels = {
-      name = "nginx-ingress"
+      name = "ingress-nginx"
     }
   }
 }
 
 # Nginx Ingress Controller Helm Chart installation
 resource "helm_release" "nginx_ingress" {
-  name       = "nginx-ingress"
+  name       = "ingress-nginx"
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
   version    = "4.8.0"
@@ -129,7 +129,14 @@ resource "helm_release" "nginx_ingress" {
     yamlencode({
       controller = {
         service = {
-          type = "LoadBalancer"
+          type = "NodePort"
+          nodePorts = {
+            http  = 31998
+            https = 32443
+          }
+        }
+        admissionWebhooks = {
+          enabled = false
         }
         resources = {
           requests = {
