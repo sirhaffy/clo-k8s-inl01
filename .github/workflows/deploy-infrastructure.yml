@@ -16,7 +16,10 @@ on:
 env:
   ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
   ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
-  ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+  ARM_SUBSCRIPTION_ID: ${{ fromJs          echo "### ArgoCD Login" >> $GITHUB_STEP_SUMMARY
+          echo "- **Username:** \`admin\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Password:** Check GitHub Actions logs or run:" >> $GITHUB_STEP_SUMMARY
+          echo "  \`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 --decode; echo\`" >> $GITHUB_STEP_SUMMARYecrets.AZURE_CREDENTIALS).subscriptionId }}
   ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
   TF_VAR_environment: 'prod'
   TF_VAR_location: ${{ secrets.AZURE_LOCATION }}
@@ -494,42 +497,61 @@ jobs:
 
           # Todo App URL
           TODO_APP_URL=""
+          TODO_ACCESS_INSTRUCTIONS=""
 
-          # Check if todo-app services exist
-          if kubectl get namespace default &>/dev/null; then
-            # Look for todo-app service
-            if kubectl get service -n default -l app.kubernetes.io/name=todo-app &>/dev/null; then
-              TODO_SERVICE_TYPE=$(kubectl get service -n default -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].spec.type}' 2>/dev/null || echo "")
+          # Check in both todo-app namespace and default namespace
+          for NAMESPACE in "todo-app" "default"; do
+            if kubectl get namespace "$NAMESPACE" &>/dev/null; then
+              # Look for todo-app service
+              if kubectl get service -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app &>/dev/null 2>&1; then
+                TODO_SERVICE_TYPE=$(kubectl get service -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].spec.type}' 2>/dev/null || echo "")
+                SERVICE_NAME=$(kubectl get service -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "todo-app")
 
-              if [ "$TODO_SERVICE_TYPE" == "LoadBalancer" ]; then
-                TODO_IP=$(kubectl get service -n default -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-                if [ ! -z "$TODO_IP" ] && [ "$TODO_IP" != "null" ]; then
-                  TODO_APP_URL="http://$TODO_IP"
+                if [ "$TODO_SERVICE_TYPE" == "LoadBalancer" ]; then
+                  TODO_IP=$(kubectl get service -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+                  if [ ! -z "$TODO_IP" ] && [ "$TODO_IP" != "null" ]; then
+                    TODO_APP_URL="http://$TODO_IP"
+                    TODO_ACCESS_INSTRUCTIONS="Direct access via LoadBalancer IP"
+                  else
+                    TODO_APP_URL="LoadBalancer IP not yet assigned"
+                    TODO_ACCESS_INSTRUCTIONS="Wait for external IP: kubectl get svc -n $NAMESPACE $SERVICE_NAME -w"
+                  fi
+                elif [ "$TODO_SERVICE_TYPE" == "ClusterIP" ]; then
+                  TODO_APP_URL="ClusterIP service"
+                  TODO_ACCESS_INSTRUCTIONS="Port-forward: kubectl port-forward svc/$SERVICE_NAME -n $NAMESPACE 8080:80"
                 else
-                  TODO_APP_URL="LoadBalancer IP not yet assigned"
+                  TODO_APP_URL="Service found but type unknown: $TODO_SERVICE_TYPE"
+                  TODO_ACCESS_INSTRUCTIONS="Check service: kubectl get svc -n $NAMESPACE $SERVICE_NAME -o yaml"
                 fi
+                break # Found service, exit loop
               else
-                TODO_APP_URL="ClusterIP service - use port-forward or ingress"
-              fi
-            else
-              # Check for ingress
-              if kubectl get ingress -n default -l app.kubernetes.io/name=todo-app &>/dev/null; then
-                INGRESS_HOST=$(kubectl get ingress -n default -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].spec.rules[0].host}' 2>/dev/null || echo "")
-                if [ ! -z "$INGRESS_HOST" ]; then
-                  TODO_APP_URL="http://$INGRESS_HOST"
-                else
-                  TODO_APP_URL="Ingress configured but host not set"
+                # Check for ingress in this namespace
+                if kubectl get ingress -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app &>/dev/null 2>&1; then
+                  INGRESS_HOST=$(kubectl get ingress -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].spec.rules[0].host}' 2>/dev/null || echo "")
+                  INGRESS_NAME=$(kubectl get ingress -n "$NAMESPACE" -l app.kubernetes.io/name=todo-app -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "todo-app")
+                  if [ ! -z "$INGRESS_HOST" ] && [ "$INGRESS_HOST" != "null" ]; then
+                    TODO_APP_URL="http://$INGRESS_HOST"
+                    TODO_ACCESS_INSTRUCTIONS="Access via Ingress host"
+                  else
+                    TODO_APP_URL="Ingress configured"
+                    TODO_ACCESS_INSTRUCTIONS="Check ingress: kubectl get ingress -n $NAMESPACE $INGRESS_NAME -o yaml"
+                  fi
+                  break # Found ingress, exit loop
                 fi
-              else
-                TODO_APP_URL="Not deployed yet - check ArgoCD for sync status"
               fi
             fi
-          else
-            TODO_APP_URL="Application namespace not found"
+          done
+
+          # If no service or ingress found
+          if [ -z "$TODO_APP_URL" ]; then
+            TODO_APP_URL="Not deployed yet"
+            TODO_ACCESS_INSTRUCTIONS="Check ArgoCD sync status: kubectl get app todo-app -n argocd"
           fi
 
           echo "todo_app_url=$TODO_APP_URL" >> $GITHUB_OUTPUT
+          echo "todo_access_instructions=$TODO_ACCESS_INSTRUCTIONS" >> $GITHUB_OUTPUT
           echo "Todo App URL: $TODO_APP_URL"
+          echo "Access Instructions: $TODO_ACCESS_INSTRUCTIONS"
 
       - name: Final Summary
         run: |
@@ -542,6 +564,15 @@ jobs:
           echo "| **ArgoCD** | \`${{ steps.app_urls.outputs.argocd_url }}\` | Ready |" >> $GITHUB_STEP_SUMMARY
           echo "| **Todo App** | \`${{ steps.app_urls.outputs.todo_app_url }}\` | Check ArgoCD |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "###How to Access Todo App" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** \`${{ steps.app_urls.outputs.todo_app_url }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Access Method:** ${{ steps.app_urls.outputs.todo_access_instructions }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.app_urls.outputs.todo_app_url }}" == *"http"* ]]; then
+            echo "**Direct URL:** ${{ steps.app_urls.outputs.todo_app_url }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "### Quick Commands" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Connect to AKS" >> $GITHUB_STEP_SUMMARY
@@ -552,10 +583,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Check application status" >> $GITHUB_STEP_SUMMARY
           echo "kubectl get apps -n argocd" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl get pods,svc,ingress --all-namespaces" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl get pods,svc,ingress -n todo-app" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Access Todo App (if deployed)" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.app_urls.outputs.todo_access_instructions }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ArgoCD Login" >> $GITHUB_STEP_SUMMARY
           echo "- **Username:** \`admin\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Password:** Check GitHub Actions logs or run:" >> $GITHUB_STEP_SUMMARY
-          echo "  \`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d\`" >> $GITHUB_STEP_SUMMARY
+          echo "  \`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 --decode; echo\`" >> $GITHUB_STEP_SUMMARY
