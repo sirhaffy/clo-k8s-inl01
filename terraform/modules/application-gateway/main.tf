@@ -1,3 +1,10 @@
+# Data source to get AKS subnet information
+data "azurerm_subnet" "aks" {
+  name                 = "aks-subnet"
+  virtual_network_name = split("/", var.aks_subnet_id)[8]
+  resource_group_name  = split("/", var.aks_subnet_id)[4]
+}
+
 # Data source to get AKS node IPs dynamically
 data "azurerm_kubernetes_cluster" "aks" {
   name                = "aks-${var.naming_prefix}"
@@ -65,10 +72,10 @@ resource "azurerm_application_gateway" "main" {
     port = 443
   }
 
-  # Backend Address Pool (AKS subnet for auto-discovery)
+  # Backend Address Pool (empty for now, will be managed externally)
   backend_address_pool {
     name = "appgw-beap"
-    # Application Gateway will auto-discover healthy nodes in AKS subnet
+    # Backend addresses will be managed via Azure CLI or auto-scaling
   }
 
   # Backend HTTP Settings

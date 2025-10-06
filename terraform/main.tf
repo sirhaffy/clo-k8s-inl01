@@ -135,5 +135,6 @@ module "application_gateway" {
   location           = module.resource_group.location
   naming_prefix      = var.naming_prefix
   appgw_subnet_id    = module.networking.appgw_subnet_id
+  aks_subnet_id      = module.networking.aks_subnet_id
   tags              = local.common_tags
 }

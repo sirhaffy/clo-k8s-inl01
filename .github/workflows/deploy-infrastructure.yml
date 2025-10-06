@@ -296,6 +296,35 @@ jobs:
           echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
           echo "aks_cluster_name=$(terraform output -raw aks_cluster_name)" >> $GITHUB_OUTPUT
 
+      - name: Configure Application Gateway Backend Pool
+        working-directory: ./terraform
+        run: |
+          # Get AKS credentials to query nodes
+          AKS_NAME="aks-${{ env.TF_VAR_naming_prefix }}"
+          az aks get-credentials --resource-group "${{ env.TF_VAR_resource_group_name }}" --name "$AKS_NAME" --overwrite-existing
+
+          # Wait for nodes to be ready
+          kubectl wait --for=condition=ready node --all --timeout=300s || echo "Some nodes not ready yet"
+
+          # Get all AKS node internal IPs
+          NODE_IPS=$(kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}' | tr ' ' '\n' | sort | tr '\n' ' ')
+
+          if [ ! -z "$NODE_IPS" ]; then
+            echo "Found AKS node IPs: $NODE_IPS"
+
+            # Update Application Gateway backend pool
+            APP_GW_NAME="appgw-${{ env.TF_VAR_naming_prefix }}"
+            az network application-gateway address-pool update \
+              --gateway-name "$APP_GW_NAME" \
+              --resource-group "${{ env.TF_VAR_resource_group_name }}" \
+              --name "appgw-beap" \
+              --servers $NODE_IPS
+
+            echo "Application Gateway backend pool updated with AKS node IPs"
+          else
+            echo "No AKS nodes found"
+          fi
+
       - name: Apply Summary
         run: |
           echo "## Infrastructure Deployed" >> $GITHUB_STEP_SUMMARY

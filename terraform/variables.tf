@@ -51,7 +51,7 @@ variable "cluster_name" {
 variable "min_node_count" {
   description = "Minimum number of nodes for autoscaling"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "max_node_count" {

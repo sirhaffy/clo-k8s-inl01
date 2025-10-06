@@ -18,6 +18,11 @@ variable "appgw_subnet_id" {
   type        = string
 }
 
+variable "aks_subnet_id" {
+  description = "Subnet ID for AKS nodes (for backend discovery)"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
