@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: todo-app
   labels:
-    app: todo-app
+    {{- include "todo-app.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -11,4 +11,4 @@ spec:
     targetPort: 8080
     protocol: TCP
   selector:
-    app: todo-app
+    {{- include "todo-app.selectorLabels" . | nindent 4 }}
