@@ -51,43 +51,44 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Verify Backend Infrastructure
+      - name: Ensure Backend Infrastructure
         run: |
-          echo "Verifying backend infrastructure exists..."
+          echo "Ensuring backend infrastructure exists..."
 
-          # Check Resource Group
+          # Ensure Resource Group exists
           if ! az group show --name "${{ env.TF_BACKEND_RESOURCE_GROUP }}" &>/dev/null; then
-            echo "Resource Group '${{ env.TF_BACKEND_RESOURCE_GROUP }}' not found!"
-            echo "Run setup commands from SETUP.md first"
-            exit 1
-          fi
-          echo "Resource Group exists: ${{ env.TF_BACKEND_RESOURCE_GROUP }}"
-
-          # Check Storage Account
-          if ! az storage account show --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --resource-group "${{ env.TF_BACKEND_RESOURCE_GROUP }}" &>/dev/null; then
-            echo "Storage Account '${{ env.TF_BACKEND_STORAGE_ACCOUNT }}' not found!"
-            echo "Run setup commands from SETUP.md first"
-            exit 1
-          fi
-          echo "Storage Account exists: ${{ env.TF_BACKEND_STORAGE_ACCOUNT }}"
-
-          # Check Storage Container
-          if ! az storage container show --name "${{ env.TF_BACKEND_CONTAINER }}" --account-name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --auth-mode login &>/dev/null; then
-            echo "Storage Container '${{ env.TF_BACKEND_CONTAINER }}' not found!"
-            echo "Run setup commands from SETUP.md first"
-            exit 1
-          fi
-          echo "Storage Container exists: ${{ env.TF_BACKEND_CONTAINER }}"
-
-          # Check Key Vault (if used)
-          KV_NAME="kv-${{ secrets.PROJECT_PREFIX || 'clo-k8s-inl01' }}-tfstate"
-          if ! az keyvault show --name "$KV_NAME" &>/dev/null; then
-            echo "Key Vault '$KV_NAME' not found - may not be needed for basic backend"
+            echo "Creating Resource Group: ${{ env.TF_BACKEND_RESOURCE_GROUP }}"
+            az group create --name "${{ env.TF_BACKEND_RESOURCE_GROUP }}" --location "${{ env.TF_VAR_location }}"
           else
-            echo "Key Vault exists: $KV_NAME"
+            echo "Resource Group exists: ${{ env.TF_BACKEND_RESOURCE_GROUP }}"
           fi
 
-          echo "Backend infrastructure verification complete!"
+          # Ensure Storage Account exists
+          if ! az storage account show --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --resource-group "${{ env.TF_BACKEND_RESOURCE_GROUP }}" &>/dev/null; then
+            echo "Creating Storage Account: ${{ env.TF_BACKEND_STORAGE_ACCOUNT }}"
+            az storage account create \
+              --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+              --resource-group "${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
+              --location "${{ env.TF_VAR_location }}" \
+              --sku Standard_LRS \
+              --allow-blob-public-access false \
+              --shared-access-key-enabled false
+          else
+            echo "Storage Account exists: ${{ env.TF_BACKEND_STORAGE_ACCOUNT }}"
+          fi
+
+          # Ensure Storage Container exists
+          if ! az storage container show --name "${{ env.TF_BACKEND_CONTAINER }}" --account-name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --auth-mode login &>/dev/null; then
+            echo "Creating Storage Container: ${{ env.TF_BACKEND_CONTAINER }}"
+            az storage container create \
+              --name "${{ env.TF_BACKEND_CONTAINER }}" \
+              --account-name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+              --auth-mode login
+          else
+            echo "Storage Container exists: ${{ env.TF_BACKEND_CONTAINER }}"
+          fi
+
+          echo "Backend infrastructure ready!"
 
       - name: Terraform Init
         working-directory: ./terraform
@@ -150,30 +151,44 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Verify Backend Infrastructure
+      - name: Ensure Backend Infrastructure
         run: |
-          echo "Verifying backend infrastructure exists..."
+          echo "Ensuring backend infrastructure exists..."
 
-          # Check Resource Group
+          # Ensure Resource Group exists
           if ! az group show --name "${{ env.TF_BACKEND_RESOURCE_GROUP }}" &>/dev/null; then
-            echo "Resource Group '${{ env.TF_BACKEND_RESOURCE_GROUP }}' not found!"
-            exit 1
+            echo "Creating Resource Group: ${{ env.TF_BACKEND_RESOURCE_GROUP }}"
+            az group create --name "${{ env.TF_BACKEND_RESOURCE_GROUP }}" --location "${{ env.TF_VAR_location }}"
+          else
+            echo "Resource Group exists"
           fi
-          echo "Resource Group exists"
 
-          # Check Storage Account
+          # Ensure Storage Account exists
           if ! az storage account show --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --resource-group "${{ env.TF_BACKEND_RESOURCE_GROUP }}" &>/dev/null; then
-            echo "Storage Account '${{ env.TF_BACKEND_STORAGE_ACCOUNT }}' not found!"
-            exit 1
+            echo "Creating Storage Account: ${{ env.TF_BACKEND_STORAGE_ACCOUNT }}"
+            az storage account create \
+              --name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+              --resource-group "${{ env.TF_BACKEND_RESOURCE_GROUP }}" \
+              --location "${{ env.TF_VAR_location }}" \
+              --sku Standard_LRS \
+              --allow-blob-public-access false \
+              --shared-access-key-enabled false
+          else
+            echo "Storage Account exists"
           fi
-          echo "Storage Account exists"
 
-          # Check Storage Container
+          # Ensure Storage Container exists
           if ! az storage container show --name "${{ env.TF_BACKEND_CONTAINER }}" --account-name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" --auth-mode login &>/dev/null; then
-            echo "Storage Container '${{ env.TF_BACKEND_CONTAINER }}' not found!"
-            exit 1
+            echo "Creating Storage Container: ${{ env.TF_BACKEND_CONTAINER }}"
+            az storage container create \
+              --name "${{ env.TF_BACKEND_CONTAINER }}" \
+              --account-name "${{ env.TF_BACKEND_STORAGE_ACCOUNT }}" \
+              --auth-mode login
+          else
+            echo "Storage Container exists"
           fi
-          echo "Storage Container exists"
+
+          echo "Backend infrastructure ready!"
 
       - name: Download Terraform Plan
         uses: actions/download-artifact@v4
