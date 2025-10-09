@@ -361,6 +361,20 @@ jobs:
             --name "$AKS_NAME" \
             --overwrite-existing
 
+      - name: Wait for AKS nodes to be ready
+        run: |
+          echo "Waiting for AKS nodes to be ready..."
+          kubectl wait --for=condition=ready node --all --timeout=600s || {
+            echo "Nodes not ready, checking status..."
+            kubectl get nodes -o wide
+            kubectl describe nodes
+            exit 1
+          }
+
+          echo "Checking node resources..."
+          kubectl top nodes || echo "Metrics not yet available"
+          kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.capacity.cpu,MEMORY:.status.capacity.memory
+
       - name: Check if ArgoCD is already installed
         id: argocd_check
         run: |
@@ -409,14 +423,48 @@ jobs:
         if: steps.argocd_check.outputs.skip_install == 'false'
         run: |
           echo "Waiting for ArgoCD server deployment..."
-          kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -n argocd
+          kubectl wait --for=condition=available --timeout=900s deployment/argocd-server -n argocd || {
+            echo "ArgoCD server not ready, checking status..."
+            kubectl get pods -n argocd
+            kubectl describe deployment argocd-server -n argocd
+          }
+
+          echo "Waiting for ArgoCD repo server..."
+          kubectl wait --for=condition=available --timeout=600s deployment/argocd-repo-server -n argocd || {
+            echo "Repo server not ready, checking status..."
+            kubectl get pods -n argocd
+          }
+
+          echo "Waiting for ArgoCD redis..."
+          kubectl wait --for=condition=available --timeout=300s deployment/argocd-redis -n argocd || {
+            echo "Redis not ready, checking status..."
+            kubectl get pods -n argocd
+          }
 
           echo "Waiting for ArgoCD application controller statefulset..."
-          kubectl wait --for=condition=ready --timeout=600s statefulset/argocd-application-controller -n argocd
+          # Application controller can take longer, increased timeout to 15 minutes
+          kubectl wait --for=condition=ready --timeout=900s statefulset/argocd-application-controller -n argocd || {
+            echo "Application controller not ready after 15 minutes"
+            echo "Checking pod status..."
+            kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-application-controller
+            kubectl describe statefulset argocd-application-controller -n argocd
 
-          echo "Waiting for other ArgoCD components..."
-          kubectl wait --for=condition=available --timeout=300s deployment/argocd-repo-server -n argocd
-          kubectl wait --for=condition=available --timeout=300s deployment/argocd-redis -n argocd
+            # Check if pod is still starting
+            POD_NAME=$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-application-controller -o jsonpath='{.items[0].metadata.name}')
+            if [ ! -z "$POD_NAME" ]; then
+              echo "Pod logs:"
+              kubectl logs "$POD_NAME" -n argocd --tail=50 || echo "Could not get logs"
+
+              # Check events
+              echo "Recent events:"
+              kubectl get events -n argocd --sort-by='.lastTimestamp' | tail -20
+            fi
+
+            # Still fail but with better info
+            exit 1
+          }
+
+          echo "All ArgoCD components are ready!"
 
       - name: Configure ArgoCD Applications
         run: |
