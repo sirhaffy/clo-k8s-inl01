@@ -624,9 +624,6 @@ jobs:
             }
           }"
 
-          # Apply Ingress application (NGINX controller)
-          kubectl apply -f argocd/ingress-application.yaml
-
           # Apply MongoDB application
           kubectl apply -f argocd/mongodb-application.yaml
 
