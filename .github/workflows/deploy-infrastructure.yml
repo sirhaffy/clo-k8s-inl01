@@ -515,8 +515,19 @@ jobs:
           echo "Key Vault URI: $KEY_VAULT_URI"
           echo "Tenant ID: $TENANT_ID"
 
+          # Wait for application to be created
+          echo "Waiting for ArgoCD application to be created..."
+          for i in {1..30}; do
+            if kubectl get application todo-app-frontend -n argocd &>/dev/null; then
+              echo "Application found!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
           # Update ArgoCD application with Key Vault parameters
-          kubectl patch application todo-app -n argocd --type merge -p "{
+          kubectl patch application todo-app-frontend -n argocd --type merge -p "{
             \"spec\": {
               \"source\": {
                 \"helm\": {
