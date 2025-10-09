@@ -519,13 +519,16 @@ jobs:
         run: |
           # Get Key Vault information first
           RESOURCE_GROUP="${{ env.TF_VAR_resource_group_name }}"
+          AKS_NAME="aks-${{ env.TF_VAR_naming_prefix }}"
           KEY_VAULT_NAME=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query "[?!contains(name, 'tfstate')].name" --output tsv | head -1)
           KEY_VAULT_URI=$(az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.vaultUri" --output tsv)
           TENANT_ID=$(az account show --query tenantId --output tsv)
+          AKS_CLIENT_ID=$(az aks show --name "$AKS_NAME" --resource-group "$RESOURCE_GROUP" --query "identityProfile.kubeletidentity.clientId" --output tsv)
 
           echo "Key Vault Name: $KEY_VAULT_NAME"
           echo "Key Vault URI: $KEY_VAULT_URI"
           echo "Tenant ID: $TENANT_ID"
+          echo "AKS Client ID: $AKS_CLIENT_ID"
 
           echo "Applying ArgoCD project..."
           kubectl apply -f argocd/project.yaml
@@ -547,7 +550,8 @@ jobs:
                   \"parameters\": [
                     {\"name\": \"azure.keyVaultName\", \"value\": \"$KEY_VAULT_NAME\"},
                     {\"name\": \"azure.keyVaultUri\", \"value\": \"$KEY_VAULT_URI\"},
-                    {\"name\": \"azure.tenantId\", \"value\": \"$TENANT_ID\"}
+                    {\"name\": \"azure.tenantId\", \"value\": \"$TENANT_ID\"},
+                    {\"name\": \"azure.clientId\", \"value\": \"$AKS_CLIENT_ID\"}
                   ]
                 }
               }
@@ -593,20 +597,6 @@ jobs:
           echo "| Notifications | Applied |" >> $GITHUB_STEP_SUMMARY
           echo "| Applications | Applied |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Access ArgoCD" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# Get ArgoCD URL" >> $GITHUB_STEP_SUMMARY
-          echo "kubectl get svc argocd-server -n argocd" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Login credentials" >> $GITHUB_STEP_SUMMARY
-          echo "Username: admin" >> $GITHUB_STEP_SUMMARY
-          echo "Password: (stored in GitHub Actions secret output)" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "- Access ArgoCD UI via LoadBalancer IP" >> $GITHUB_STEP_SUMMARY
-          echo "- Monitor application sync status" >> $GITHUB_STEP_SUMMARY
-          echo "- Configure additional applications as needed" >> $GITHUB_STEP_SUMMARY
 
       - name: Get Application URLs
         id: app_urls
@@ -704,7 +694,7 @@ jobs:
 
       - name: Final Summary
         run: |
-          echo "##Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Access Your Applications" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -713,32 +703,68 @@ jobs:
           echo "| **ArgoCD** | \`${{ steps.app_urls.outputs.argocd_url }}\` | Ready |" >> $GITHUB_STEP_SUMMARY
           echo "| **Todo App** | \`${{ steps.app_urls.outputs.todo_app_url }}\` | Check ArgoCD |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "###How to Access Todo App" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** \`${{ steps.app_urls.outputs.todo_app_url }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Access Method:** ${{ steps.app_urls.outputs.todo_access_instructions }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ steps.app_urls.outputs.todo_app_url }}" == *"http"* ]]; then
-            echo "**Direct URL:** ${{ steps.app_urls.outputs.todo_app_url }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### ArgoCD Login" >> $GITHUB_STEP_SUMMARY
+          echo "- **Username:** \`admin\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.argocd_password.outputs.password }}" != "not-available" ]; then
+            echo "- **Password:** \`${{ steps.argocd_password.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Password:** Not available (external auth may be configured)" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "### Quick Commands" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# Connect to AKS" >> $GITHUB_STEP_SUMMARY
-          echo "az aks get-credentials --resource-group ${{ env.TF_VAR_resource_group_name }} --name aks-${{ env.TF_VAR_naming_prefix }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Port-forward ArgoCD (if needed)" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Cluster Information" >> $GITHUB_STEP_SUMMARY
+          SERVER_INFO=$(kubectl config view | grep server | sed 's/^[[:space:]]*//')
+          if [ -n "$SERVER_INFO" ]; then
+            echo "- **Server:** \`${SERVER_INFO#server: }\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          kubectl get nodes >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Quick Start Commands" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 1. Setup kubeconfig (WSL)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Copy config from Windows to WSL" >> $GITHUB_STEP_SUMMARY
+          echo "cp /mnt/c/Users/<username>/.kube/config ~/.kube/config" >> $GITHUB_STEP_SUMMARY
+          echo "chmod 600 ~/.kube/config" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Verify connection" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl config view | grep server" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl get nodes" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "#### 2. Access ArgoCD UI" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Get admin password" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Port-forward to access UI" >> $GITHUB_STEP_SUMMARY
           echo "kubectl port-forward svc/argocd-server -n argocd 8080:443" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Check application status" >> $GITHUB_STEP_SUMMARY
+          echo "# Open in browser: https://localhost:8080" >> $GITHUB_STEP_SUMMARY
+          echo "# Username: admin" >> $GITHUB_STEP_SUMMARY
+          echo "# Password: <from command above>" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "#### 3. Access Todo App" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Check deployment status" >> $GITHUB_STEP_SUMMARY
           echo "kubectl get apps -n argocd" >> $GITHUB_STEP_SUMMARY
           echo "kubectl get pods,svc,ingress -n todo-app" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Access Todo App (if deployed)" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.app_urls.outputs.todo_access_instructions }}" >> $GITHUB_STEP_SUMMARY
+          echo "# Port-forward to access app" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl port-forward svc/todo-app -n todo-app 8081:80" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Open in browser: http://localhost:8081" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ArgoCD Login" >> $GITHUB_STEP_SUMMARY
-          echo "- **Username:** \`admin\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Password:** Check GitHub Actions logs or run:" >> $GITHUB_STEP_SUMMARY
-          echo "  \`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 --decode; echo\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "#### 4. Alternative: Get credentials via Azure CLI" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "az aks get-credentials --resource-group ${{ env.TF_VAR_resource_group_name }} --name aks-${{ env.TF_VAR_naming_prefix }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
