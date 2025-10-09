@@ -837,5 +837,3 @@ jobs:
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "az aks get-credentials --resource-group ${{ env.TF_VAR_resource_group_name }} --name aks-${{ env.TF_VAR_naming_prefix }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-          echo "### Deploy" >> $GITHUB_STEP_SUMMARY
