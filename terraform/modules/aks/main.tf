@@ -39,7 +39,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     max_count           = var.max_node_count
 
     upgrade_settings {
-      max_surge = "10%"
+      max_surge = "1"
     }
   }
 

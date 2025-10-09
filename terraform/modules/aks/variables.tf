@@ -38,13 +38,13 @@ variable "kubernetes_version" {
 variable "min_node_count" {
   description = "Minimum number of nodes for autoscaling"
   type        = number
-  default     = 3
+  default     = 2
 }
 
 variable "max_node_count" {
   description = "Maximum number of nodes for autoscaling"
   type        = number
-  default     = 5
+  default     = 3
 }
 
 variable "admin_group_object_ids" {
@@ -56,7 +56,7 @@ variable "admin_group_object_ids" {
 variable "vm_size" {
   description = "VM size for nodes"
   type        = string
-  default     = "Standard_B4ms"
+  default     = "Standard_B2s"
 }
 
 variable "tags" {

@@ -51,19 +51,19 @@ variable "cluster_name" {
 variable "min_node_count" {
   description = "Minimum number of nodes for autoscaling"
   type        = number
-  default     = 3
+  default     = 2
 }
 
 variable "max_node_count" {
   description = "Maximum number of nodes for autoscaling"
   type        = number
-  default     = 5
+  default     = 3
 }
 
 variable "vm_size" {
   description = "Size of the VMs in the default node pool"
   type        = string
-  default     = "Standard_D2s_v3"
+  default     = "Standard_B2s"
 }
 
 variable "kubernetes_version" {
