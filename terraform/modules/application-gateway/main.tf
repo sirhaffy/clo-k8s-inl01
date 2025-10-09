@@ -1,9 +1,3 @@
-# Data source to get AKS node IPs dynamically
-data "azurerm_kubernetes_cluster" "aks" {
-  name                = "aks-${var.naming_prefix}"
-  resource_group_name = var.resource_group_name
-}
-
 # Public IP for Application Gateway
 resource "azurerm_public_ip" "appgw" {
   name                = "pip-${var.naming_prefix}-appgw"
