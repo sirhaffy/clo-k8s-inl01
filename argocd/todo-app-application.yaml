@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: todo-app
+  name: todo-app-frontend
   namespace: argocd
   labels:
-    app.kubernetes.io/name: todo-app
+    app.kubernetes.io/name: todo-app-frontend
     app.kubernetes.io/component: application
   annotations:
     # ArgoCD Image Updater configuration
@@ -17,11 +17,11 @@ metadata:
     argocd-image-updater.argoproj.io/git-repository: "https://github.com/sirhaffy/clo-k8s-inl01.git"
     # Source refresh configuration
     argocd.argoproj.io/refresh: 'hard'  # Force refresh cache
-    argocd.argoproj.io/sync-wave: '0'   # Sync priority
+    argocd.argoproj.io/sync-wave: '1'   # Deploy after MongoDB and secrets
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: todo-app-project
 
   # Source repository configuration
   source:

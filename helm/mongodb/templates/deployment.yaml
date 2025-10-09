@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mongodb.fullname" . }}
+  labels:
+    {{- include "mongodb.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "mongodb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "mongodb.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:{{ .Values.image.tag | default "7.0" }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "root"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.auth.existingSecret | quote }}
+              key: {{ .Values.auth.secretKey | quote }}
+        - name: MONGO_INITDB_DATABASE
+          value: {{ .Values.auth.database | quote }}
+        {{- if .Values.persistence.enabled }}
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          tcpSocket:
+            port: mongodb
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: mongodb
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      {{- if .Values.persistence.enabled }}
+      volumes:
+      - name: mongodb-storage
+        persistentVolumeClaim:
+          claimName: {{ include "mongodb.fullname" . }}-pvc
+      {{- end }}

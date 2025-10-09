@@ -1,0 +1,15 @@
+apiVersion: v2
+name: mongodb
+description: MongoDB database for todo-app
+type: application
+version: 0.1.0
+appVersion: "7.0"
+keywords:
+  - mongodb
+  - database
+  - nosql
+home: https://github.com/sirhaffy/clo-k8s-inl01
+sources:
+  - https://github.com/sirhaffy/clo-k8s-inl01
+maintainers:
+  - name: sirhaffy

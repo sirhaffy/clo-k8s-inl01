@@ -82,13 +82,14 @@ node_modules/
 # Helm packages
 *.tgz
 
-# Kubernetes secrets (never commit)
-*-secret.yaml
-secret.yaml
-secrets.yaml
-**/secrets/**
-**/*secret*
-**/secret.yml
+# Kubernetes actual secrets with data (never commit)
+# But allow Helm templates and ArgoCD configs
+**/secret-with-data.yaml
+**/actual-secrets.yaml
+# Allow our Helm templates and ArgoCD configs
+!helm/**/secret-store.yaml
+!helm/**/external-secret.yaml
+!argocd/**/*secret*.yaml
 
 # Kubernetes sensitive files
 kubeconfig*

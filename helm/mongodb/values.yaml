@@ -1,0 +1,38 @@
+# MongoDB Configuration
+image:
+  tag: "7.0"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 27017
+
+# Authentication
+auth:
+  database: "todoapp"
+  existingSecret: "mongodb-secret"
+  secretKey: "mongodb-password"
+
+# Persistence
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 8Gi
+  storageClass: "default"
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Chart overrides
+nameOverride: ""
+fullnameOverride: ""
+
+# Namespace (deployed to same namespace as todo-app)
+namespace: "todo-app"

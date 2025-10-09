@@ -1,3 +1,4 @@
+# Configuration for ArgoCD application controller
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,6 +25,7 @@ data:
   controller.app.hard.refresh.interval: "3m"
 
 ---
+# Configuration for ArgoCD server
 apiVersion: v1
 kind: ConfigMap
 metadata:

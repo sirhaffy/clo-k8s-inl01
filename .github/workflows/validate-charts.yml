@@ -1,0 +1,121 @@
+name: Validate Helm Charts and YAML
+
+on:
+  push:
+    branches: [master, main]
+    paths: ['helm/**', 'argocd/**']
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Charts and YAML
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Validate Helm Charts
+        run: |
+          echo "## Helm Chart Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Chart | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          # Test secrets chart
+          echo "Testing secrets chart..."
+          cd helm/secrets
+          if helm template . --debug > /tmp/secrets-output.yaml 2>&1; then
+            echo "| secrets | Pass | Template rendered successfully |" >> $GITHUB_STEP_SUMMARY
+            echo "Secrets chart validated"
+          else
+            echo "| secrets | Fail | Template rendering failed |" >> $GITHUB_STEP_SUMMARY
+            echo "Secrets chart validation failed"
+            cat /tmp/secrets-output.yaml
+            exit 1
+          fi
+          cd ../..
+
+          # Test mongodb chart
+          echo "Testing mongodb chart..."
+          cd helm/mongodb
+          if helm template . --debug > /tmp/mongodb-output.yaml 2>&1; then
+            echo "| mongodb | Pass | Template rendered successfully |" >> $GITHUB_STEP_SUMMARY
+            echo "Mongodb chart validated"
+          else
+            echo "| mongodb | Fail | Template rendering failed |" >> $GITHUB_STEP_SUMMARY
+            echo "Mongodb chart validation failed"
+            cat /tmp/mongodb-output.yaml
+            exit 1
+          fi
+          cd ../..
+
+          # Test todo-app chart
+          echo "Testing todo-app chart..."
+          cd helm/todo-app
+          if helm template . --debug > /tmp/todo-app-output.yaml 2>&1; then
+            echo "| todo-app | Pass | Template rendered successfully |" >> $GITHUB_STEP_SUMMARY
+            echo "Todo-app chart validated"
+          else
+            echo "| todo-app | Fail | Template rendering failed |" >> $GITHUB_STEP_SUMMARY
+            echo "Todo-app chart validation failed"
+            cat /tmp/todo-app-output.yaml
+            exit 1
+          fi
+          cd ../..
+
+      - name: Validate ArgoCD YAML Files
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ArgoCD YAML Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          cd argocd
+          for file in *.yaml; do
+            if [ -f "$file" ]; then
+              echo "Validating $file..."
+              # Check YAML syntax with yq
+              if yq eval . "$file" > /dev/null 2>&1; then
+                echo "| $file | Pass | Valid YAML syntax |" >> $GITHUB_STEP_SUMMARY
+                echo "$file validated"
+              else
+                echo "| $file | ❌Fail | Invalid YAML syntax |" >> $GITHUB_STEP_SUMMARY
+                echo "$file validation failed"
+                yq eval . "$file"
+                exit 1
+              fi
+
+              # Additional check for ArgoCD Application structure
+              if echo "$file" | grep -q "application.yaml"; then
+                if yq eval '.kind == "Application" and .apiVersion == "argoproj.io/v1alpha1"' "$file" | grep -q "true"; then
+                  echo "$file has correct ArgoCD Application structure"
+                else
+                  echo "$file missing required ArgoCD Application fields"
+                  exit 1
+                fi
+              fi
+            fi
+          done
+
+      - name: Lint Summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Validation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All Helm charts and ArgoCD YAML files passed validation!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What was tested:" >> $GITHUB_STEP_SUMMARY
+          echo "- Helm chart template rendering" >> $GITHUB_STEP_SUMMARY
+          echo "- YAML syntax validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ArgoCD Application structure" >> $GITHUB_STEP_SUMMARY

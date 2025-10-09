@@ -2,7 +2,7 @@ name: Deploy Infrastructure to Azure
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main] # Trigger on merge to main branches
     paths: ['terraform/**', '.github/workflows/deploy-infrastructure.yml', 'argocd/**', 'helm/**']
   workflow_dispatch:
     inputs:
@@ -110,22 +110,6 @@ jobs:
       - name: Terraform Validate
         working-directory: ./terraform
         run: terraform validate
-
-      - name: Validate Kubernetes YAML
-        run: |
-          # Check ArgoCD YAML files
-          for file in argocd/*.yaml; do
-            if [ -f "$file" ]; then
-              echo "Validating $file"
-              kubectl --dry-run=client apply -f "$file" || echo "Warning: $file has validation issues"
-            fi
-          done
-
-          # Check Helm templates
-          if [ -d "helm/todo-app" ]; then
-            echo "Validating Helm templates"
-            helm template test-release helm/todo-app --dry-run || echo "Warning: Helm template has issues"
-          fi
 
       - name: Terraform Plan
         id: plan

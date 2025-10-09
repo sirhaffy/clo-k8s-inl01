@@ -167,28 +167,9 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-# MongoDB Persistent Storage Configuration
-mongodb:
-  enabled: true
-  # Passwords come from Azure Key Vault via External Secrets Operator
-  persistence:
-    enabled: true
-    storageClass: "managed-csi"  # Azure Disk CSI driver
-    accessModes:
-      - ReadWriteOnce
-    size: 10Gi
-  auth:
-    # Password comes from External Secret (Azure Key Vault)
-    existingSecret: "mongodb-secret"
-    secretKey: "root-password"
-    database: "TodoApp"
-  service:
-    type: ClusterIP
-    port: 27017
-
 # Environment variables - references to secrets
 env:
-  # MongoDB connection comes from secret
+  # MongoDB connection comes from secret (MongoDB deployed separately)
   MONGODB_CONNECTION:
     secretKeyRef:
       name: "mongodb-secret"
@@ -197,12 +178,8 @@ env:
 # Production environment settings
 environment: "Production"
 
-# Azure Key Vault integration (for production)
-azure:
-  tenantId: ""  # Set by GitHub Actions from Terraform output
-  keyVaultName: ""  # Set by GitHub Actions from Terraform output
-  keyVaultUri: ""  # Set by GitHub Actions from Terraform output
-  # These values will be populated by the GitHub Actions workflow
+# Namespace configuration
+namespace: "todo-app"
 
 nodeSelector: {}
 
