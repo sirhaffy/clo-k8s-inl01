@@ -32,7 +32,6 @@ spec:
       valueFiles:
         - values.yaml
       parameters:
-        # Remove image.tag override - let Image Updater manage it via values.yaml
         - name: replicaCount
           value: "2"
 
@@ -44,36 +43,36 @@ spec:
   # Sync policy for automatic deployment
   syncPolicy:
     automated:
-      prune: true          # Remove resources that are no longer in Git
-      selfHeal: true       # Automatically fix drift from desired state
-      allowEmpty: false    # Don't sync if source is empty
+      prune: true               # Remove resources that are no longer in Git
+      selfHeal: true            # Automatically fix drift from desired state
+      allowEmpty: false         # Don't sync if source is empty
     syncOptions:
       - CreateNamespace=true    # Create namespace if it doesn't exist
       - PrunePropagationPolicy=foreground
-      - PruneLast=true         # Prune resources last
+      - PruneLast=true          # Prune resources last
       - ApplyOutOfSyncOnly=true # Only apply resources that are out of sync
     retry:
-      limit: 5               # Max retry attempts
+      limit: 5                  # Max retry attempts
       backoff:
-        duration: 5s         # Initial retry delay
-        factor: 2            # Backoff factor
-        maxDuration: 3m      # Maximum retry delay
+        duration: 5s            # Initial retry delay
+        factor: 2               # Backoff factor
+        maxDuration: 3m         # Maximum retry delay
 
   # Refresh configuration - how often ArgoCD checks for changes
   info:
     - name: 'Refresh Interval'
-      value: '3m'          # Check for Git changes every 3 minutes
+      value: '5m'               # Check for Git changes in minutes
 
   # Health check configuration
   ignoreDifferences:
     - group: apps
       kind: Deployment
       jsonPointers:
-        - /spec/replicas    # Ignore replica differences (for HPA)
+        - /spec/replicas        # Ignore replica differences (for HPA)
     - group: ""
       kind: Secret
       jsonPointers:
-        - /data           # Ignore secret data changes from external sources
+        - /data                 # Ignore secret data changes from external sources
 
   # Revision history limit
   revisionHistoryLimit: 10

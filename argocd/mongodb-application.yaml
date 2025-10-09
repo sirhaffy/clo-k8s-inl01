@@ -4,7 +4,6 @@ metadata:
   name: mongodb
   namespace: argocd
   annotations:
-    # Image updater not needed for MongoDB (stable image)
     argocd.argoproj.io/refresh: 'normal'
     argocd.argoproj.io/sync-wave: '0'   # Deploy after secrets
 
@@ -15,7 +14,7 @@ spec:
   source:
     repoURL: https://github.com/sirhaffy/clo-k8s-inl01.git
     targetRevision: master
-    path: helm/mongodb  # Our new MongoDB chart
+    path: helm/mongodb
     helm:
       valueFiles:
         - values.yaml
@@ -28,19 +27,19 @@ spec:
   # Sync policy for automatic deployment
   syncPolicy:
     automated:
-      prune: true          # Remove resources that are no longer in Git
-      selfHeal: true       # Automatically fix drift from desired state
-      allowEmpty: false    # Don't sync if source is empty
+      prune: true               # Remove resources that are no longer in Git
+      selfHeal: true            # Automatically fix drift from desired state
+      allowEmpty: false         # Don't sync if source is empty
     syncOptions:
       - CreateNamespace=true    # Create namespace if it doesn't exist
       - PrunePropagationPolicy=foreground
-      - PruneLast=true         # Prune resources last
+      - PruneLast=true          # Prune resources last
     retry:
-      limit: 5               # Max retry attempts
+      limit: 5                  # Max retry attempts
       backoff:
-        duration: 5s         # Initial retry delay
-        factor: 2            # Backoff factor
-        maxDuration: 3m      # Maximum retry delay
+        duration: 5s            # Initial retry delay
+        factor: 2               # Backoff factor
+        maxDuration: 3m         # Maximum retry delay
 
   # Health check configuration
   ignoreDifferences:

@@ -19,7 +19,7 @@ resource "azurerm_key_vault" "main" {
   tenant_id           = var.tenant_id
   sku_name            = "standard"
 
-  # Säkerhetsinställningar
+  # Secret management settings
   enabled_for_disk_encryption     = true
   enabled_for_deployment          = true
   enabled_for_template_deployment = true
@@ -100,7 +100,7 @@ resource "azurerm_key_vault_secret" "mongodb_connection" {
 
 resource "azurerm_key_vault_secret" "dockerhub_username" {
   name         = "dockerhub-username"
-  value        = "haffy"  # Ditt DockerHub username
+  value        = "haffy"  # Docker Hub Username
   key_vault_id = azurerm_key_vault.main.id
 
   depends_on = [azurerm_key_vault_access_policy.current_user]
@@ -108,7 +108,7 @@ resource "azurerm_key_vault_secret" "dockerhub_username" {
 
 resource "azurerm_key_vault_secret" "dockerhub_token" {
   name         = "dockerhub-token"
-  value        = "change-me-in-azure-portal"  # Ändra i Azure Portal
+  value        = "change-me-in-azure-portal" # This is a placeholder
   key_vault_id = azurerm_key_vault.main.id
 
   depends_on = [azurerm_key_vault_access_policy.current_user]

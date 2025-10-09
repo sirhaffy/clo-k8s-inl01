@@ -37,7 +37,6 @@ resource "azurerm_kubernetes_cluster" "main" {
     enable_auto_scaling = true
     min_count           = var.min_node_count
     max_count           = var.max_node_count
-    # Ta bort node_count när auto_scaling är aktiverat
 
     upgrade_settings {
       max_surge = "10%"

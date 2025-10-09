@@ -11,7 +11,7 @@ spec:
   # Source repositories allowed for this project
   sourceRepos:
     - https://github.com/sirhaffy/clo-k8s-inl01.git
-    - https://charts.bitnami.com/bitnami    # For MongoDB
+    - https://charts.bitnami.com/bitnami
     - https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
 
   # Destination clusters and namespaces

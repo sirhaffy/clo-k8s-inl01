@@ -82,7 +82,7 @@ resource "helm_release" "argocd" {
 
       # Dex configuration (OIDC)
       dex = {
-        enabled = false  # Simple configuration for start
+        enabled = false
       }
 
       # Redis configuration

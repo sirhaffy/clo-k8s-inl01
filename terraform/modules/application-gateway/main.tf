@@ -65,10 +65,9 @@ resource "azurerm_application_gateway" "main" {
     port = 443
   }
 
-  # Backend Address Pool (empty for now, will be managed externally)
+  # Backend Address Pool will be populated dynamically with AKS node IPs
   backend_address_pool {
     name = "appgw-beap"
-    # Backend addresses will be managed via Azure CLI or auto-scaling
   }
 
   # Backend HTTP Settings
