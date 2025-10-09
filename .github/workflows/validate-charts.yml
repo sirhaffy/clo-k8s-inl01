@@ -3,7 +3,7 @@ name: Validate Helm Charts and YAML
 on:
   push:
     branches: [master, main]
-    paths: ['helm/**', 'argocd/**']
+    paths: ['**']
   workflow_dispatch:
 
 jobs:
