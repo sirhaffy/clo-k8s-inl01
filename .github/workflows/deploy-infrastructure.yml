@@ -422,56 +422,84 @@ jobs:
       - name: Wait for ArgoCD
         if: steps.argocd_check.outputs.skip_install == 'false'
         run: |
-          echo "Waiting for ArgoCD server deployment..."
-          kubectl wait --for=condition=available --timeout=900s deployment/argocd-server -n argocd || {
-            echo "ArgoCD server not ready, checking status..."
-            kubectl get pods -n argocd
-            kubectl describe deployment argocd-server -n argocd
+          # Function to wait for resource with retries
+          wait_for_resource() {
+            local resource_type=$1
+            local resource_name=$2
+            local namespace=$3
+            local max_attempts=$4
+            local wait_seconds=$5
+
+            echo "Waiting for $resource_type/$resource_name..."
+
+            for attempt in $(seq 1 $max_attempts); do
+              echo "Attempt $attempt/$max_attempts..."
+
+              if kubectl get $resource_type $resource_name -n $namespace &>/dev/null; then
+                # Check if pods are ready
+                if [ "$resource_type" == "deployment" ]; then
+                  READY=$(kubectl get deployment $resource_name -n $namespace -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+                  DESIRED=$(kubectl get deployment $resource_name -n $namespace -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "1")
+                elif [ "$resource_type" == "statefulset" ]; then
+                  READY=$(kubectl get statefulset $resource_name -n $namespace -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+                  DESIRED=$(kubectl get statefulset $resource_name -n $namespace -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "1")
+                fi
+
+                if [ "$READY" == "$DESIRED" ] && [ "$READY" != "0" ]; then
+                  echo "✓ $resource_type/$resource_name is ready ($READY/$DESIRED replicas)"
+                  return 0
+                fi
+
+                echo "  Status: $READY/$DESIRED replicas ready, waiting..."
+              else
+                echo "  Resource not found yet..."
+              fi
+
+              [ $attempt -lt $max_attempts ] && sleep $wait_seconds
+            done
+
+            echo "✗ Timeout waiting for $resource_type/$resource_name"
+            kubectl get pods -n $namespace -l app.kubernetes.io/name=$resource_name || true
+            return 1
           }
 
-          echo "Waiting for ArgoCD repo server..."
-          kubectl wait --for=condition=available --timeout=600s deployment/argocd-repo-server -n argocd || {
-            echo "Repo server not ready, checking status..."
-            kubectl get pods -n argocd
-          }
+          # Wait for ArgoCD components
+          wait_for_resource "deployment" "argocd-server" "argocd" 5 60 || exit 1
+          wait_for_resource "deployment" "argocd-repo-server" "argocd" 5 60 || exit 1
+          wait_for_resource "deployment" "argocd-redis" "argocd" 5 30 || exit 1
+          wait_for_resource "statefulset" "argocd-application-controller" "argocd" 10 60 || {
+            echo "Application controller timeout, checking if it's actually running..."
+            POD_STATUS=$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-application-controller -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "Unknown")
+            POD_READY=$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-application-controller -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "False")
 
-          echo "Waiting for ArgoCD redis..."
-          kubectl wait --for=condition=available --timeout=300s deployment/argocd-redis -n argocd || {
-            echo "Redis not ready, checking status..."
-            kubectl get pods -n argocd
-          }
-
-          echo "Waiting for ArgoCD application controller statefulset..."
-          # Application controller can take longer, increased timeout to 15 minutes
-          kubectl wait --for=condition=ready --timeout=900s statefulset/argocd-application-controller -n argocd || {
-            echo "Application controller not ready after 15 minutes"
-            echo "Checking pod status..."
-            kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-application-controller
-            kubectl describe statefulset argocd-application-controller -n argocd
-
-            # Check if pod is still starting
-            POD_NAME=$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-application-controller -o jsonpath='{.items[0].metadata.name}')
-            if [ ! -z "$POD_NAME" ]; then
-              echo "Pod logs:"
-              kubectl logs "$POD_NAME" -n argocd --tail=50 || echo "Could not get logs"
-
-              # Check events
-              echo "Recent events:"
-              kubectl get events -n argocd --sort-by='.lastTimestamp' | tail -20
+            if [ "$POD_STATUS" == "Running" ] && [ "$POD_READY" == "True" ]; then
+              echo "Pod is running and ready despite StatefulSet timeout - continuing"
+            else
+              echo "Pod is not ready. Status: $POD_STATUS, Ready: $POD_READY"
+              kubectl logs -n argocd -l app.kubernetes.io/name=argocd-application-controller --tail=50 || true
+              exit 1
             fi
-
-            # Still fail but with better info
-            exit 1
           }
 
-          echo "All ArgoCD components are ready!"
+          echo "✓ All ArgoCD components are ready!"
 
       - name: Configure ArgoCD Applications
         run: |
+          echo "Applying ArgoCD project..."
           kubectl apply -f argocd/project.yaml
-          kubectl apply -f argocd/notifications.yaml
+
+          echo "Applying ArgoCD configuration..."
+          kubectl apply -f argocd/argocd-config.yaml || echo "ArgoCD config not required or already applied"
+
+          echo "Waiting for project to be ready..."
           sleep 10
-          kubectl apply -f argocd/application.yaml
+
+          echo "Applying ArgoCD applications..."
+          kubectl apply -f argocd/secrets-application.yaml
+          kubectl apply -f argocd/mongodb-application.yaml
+          kubectl apply -f argocd/todo-app-application.yaml
+
+          echo "ArgoCD applications configured successfully"
 
       - name: Update ArgoCD Application with Key Vault Configuration
         run: |
