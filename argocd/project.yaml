@@ -79,14 +79,14 @@ spec:
   # Sync windows - when automatic sync is allowed
   syncWindows:
     - kind: allow
-      schedule: "0 6-22 * * *"  # Allow sync between 06:00-22:00
+      schedule: "0 6-22 * * *"  # Allow sync between 06:00-22:00 (daytime)
       duration: 16h
       applications:
-        - todo-app
+        - '*'
       manualSync: true
     - kind: deny
-      schedule: "0 22-6 * * *"  # Block automatic sync during night
-      duration: 8h
+      schedule: "0 22 * * *"     # Block automatic sync from 22:00
+      duration: 8h               # for 8 hours (until 06:00)
       applications:
-        - todo-app
-      manualSync: true          # Still allow manual sync
+        - '*'
+      manualSync: true           # Still allow manual sync

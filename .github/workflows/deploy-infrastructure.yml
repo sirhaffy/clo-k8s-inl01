@@ -483,6 +483,38 @@ jobs:
 
           echo "✓ All ArgoCD components are ready!"
 
+      - name: Install External Secrets Operator
+        run: |
+          echo "Installing External Secrets Operator..."
+
+          # Add Helm repository
+          helm repo add external-secrets https://charts.external-secrets.io
+          helm repo update
+
+          # Check if already installed
+          if helm list -n external-secrets-system | grep -q external-secrets; then
+            echo "External Secrets Operator already installed"
+          else
+            # Install External Secrets Operator
+            helm install external-secrets external-secrets/external-secrets \
+              --namespace external-secrets-system \
+              --create-namespace \
+              --set installCRDs=true \
+              --wait \
+              --timeout 5m
+
+            echo "✓ External Secrets Operator installed successfully"
+          fi
+
+          # Verify CRDs are installed
+          echo "Verifying External Secrets CRDs..."
+          kubectl get crd | grep external-secrets || {
+            echo "✗ External Secrets CRDs not found!"
+            exit 1
+          }
+
+          echo "✓ External Secrets Operator is ready!"
+
       - name: Configure ArgoCD Applications
         run: |
           # Get Key Vault information first
