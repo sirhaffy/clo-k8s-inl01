@@ -13,3 +13,14 @@ resource "azurerm_role_assignment" "aks_managed_identity_operator" {
   role_definition_name = "Managed Identity Operator"
   principal_id         = var.aks_principal_id
 }
+
+# Key Vault Access Policy for AKS Kubelet Identity
+resource "azurerm_key_vault_access_policy" "aks_kubelet_identity" {
+  key_vault_id = var.key_vault_id
+  tenant_id    = var.tenant_id
+  object_id    = var.aks_kubelet_identity_object_id
+
+  secret_permissions = [
+    "Get", "List"
+  ]
+}

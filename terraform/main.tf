@@ -72,7 +72,7 @@ module "key_vault" {
   naming_prefix                   = var.naming_prefix
   tenant_id                       = data.azurerm_client_config.current.tenant_id
   object_id                       = data.azurerm_client_config.current.object_id
-  aks_managed_identity_object_id  = module.aks.kubelet_identity_object_id
+  aks_managed_identity_object_id  = null  # Will be added via RBAC module after AKS is created
   tags                           = local.common_tags
 }
 
@@ -120,9 +120,11 @@ module "aks" {
 module "rbac" {
   source = "./modules/rbac"
 
-  resource_group_name = module.resource_group.name
-  aks_principal_id   = module.aks.principal_id
-  key_vault_id       = module.key_vault.id
+  resource_group_name              = module.resource_group.name
+  aks_principal_id                = module.aks.principal_id
+  aks_kubelet_identity_object_id  = module.aks.kubelet_identity_object_id
+  key_vault_id                    = module.key_vault.id
+  tenant_id                       = data.azurerm_client_config.current.tenant_id
 }
 
 # Application Gateway Module
