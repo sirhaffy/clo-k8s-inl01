@@ -31,12 +31,13 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Default node pool with autoscaling
   default_node_pool {
-    name                = "default"
-    vm_size             = var.vm_size
-    vnet_subnet_id      = var.subnet_id
-    enable_auto_scaling = true
-    min_count           = var.min_node_count
-    max_count           = var.max_node_count
+    name                   = "default"
+    vm_size                = var.vm_size
+    vnet_subnet_id         = var.subnet_id
+    enable_auto_scaling    = true
+    min_count              = var.min_node_count
+    max_count              = var.max_node_count
+    temporary_name_for_rotation = "defaulttemp" # Temporary name for node pool during upgrade
 
     upgrade_settings {
       max_surge = "1"
