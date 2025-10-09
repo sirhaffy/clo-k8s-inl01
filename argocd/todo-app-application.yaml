@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: todo-app-frontend
+  name: todo-app
   namespace: argocd
   labels:
-    app.kubernetes.io/name: todo-app-frontend
+    app.kubernetes.io/name: todo-app
     app.kubernetes.io/component: application
   annotations:
     # ArgoCD Image Updater configuration
