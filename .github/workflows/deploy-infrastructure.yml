@@ -524,11 +524,13 @@ jobs:
           KEY_VAULT_URI=$(az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.vaultUri" --output tsv)
           TENANT_ID=$(az account show --query tenantId --output tsv)
           AKS_CLIENT_ID=$(az aks show --name "$AKS_NAME" --resource-group "$RESOURCE_GROUP" --query "identityProfile.kubeletidentity.clientId" --output tsv)
+          AKS_OBJECT_ID=$(az aks show --name "$AKS_NAME" --resource-group "$RESOURCE_GROUP" --query "identityProfile.kubeletidentity.objectId" --output tsv)
 
           echo "Key Vault Name: $KEY_VAULT_NAME"
           echo "Key Vault URI: $KEY_VAULT_URI"
           echo "Tenant ID: $TENANT_ID"
           echo "AKS Client ID: $AKS_CLIENT_ID"
+          echo "AKS Object ID: $AKS_OBJECT_ID"
 
           echo "Applying ArgoCD project..."
           kubectl apply -f argocd/project.yaml
@@ -551,7 +553,8 @@ jobs:
                     {\"name\": \"azure.keyVaultName\", \"value\": \"$KEY_VAULT_NAME\"},
                     {\"name\": \"azure.keyVaultUri\", \"value\": \"$KEY_VAULT_URI\"},
                     {\"name\": \"azure.tenantId\", \"value\": \"$TENANT_ID\"},
-                    {\"name\": \"azure.clientId\", \"value\": \"$AKS_CLIENT_ID\"}
+                    {\"name\": \"azure.clientId\", \"value\": \"$AKS_CLIENT_ID\"},
+                    {\"name\": \"azure.objectId\", \"value\": \"$AKS_OBJECT_ID\"}
                   ]
                 }
               }
