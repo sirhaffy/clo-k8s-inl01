@@ -1,0 +1,23 @@
+# Infrastructure Configuration
+namespace: "default"
+
+# NGINX Ingress Controller
+nginx:
+  enabled: true
+  
+# NGINX Ingress Controller configuration (passed to ingress-nginx chart)
+ingress-nginx:
+  controller:
+    service:
+      type: LoadBalancer
+      annotations:
+        service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /healthz
+    config:
+      use-forwarded-headers: "true"
+      compute-full-forwarded-for: "true"
+    metrics:
+      enabled: true
+    admissionWebhooks:
+      enabled: true
+  defaultBackend:
+    enabled: false

@@ -487,19 +487,35 @@ jobs:
         run: |
           echo "Installing External Secrets Operator..."
 
+          # Get AKS identity information
+          RESOURCE_GROUP="${{ env.TF_VAR_resource_group_name }}"
+          AKS_NAME="aks-${{ env.TF_VAR_naming_prefix }}"
+          AKS_CLIENT_ID=$(az aks show --name "$AKS_NAME" --resource-group "$RESOURCE_GROUP" --query "identityProfile.kubeletidentity.clientId" --output tsv)
+
+          echo "AKS Client ID for External Secrets: $AKS_CLIENT_ID"
+
           # Add Helm repository
           helm repo add external-secrets https://charts.external-secrets.io
           helm repo update
 
           # Check if already installed
           if helm list -n external-secrets-system | grep -q external-secrets; then
-            echo "External Secrets Operator already installed"
+            echo "External Secrets Operator already installed, upgrading with Azure identity..."
+            helm upgrade external-secrets external-secrets/external-secrets \
+              --namespace external-secrets-system \
+              --set installCRDs=true \
+              --set "serviceAccount.annotations.azure\.workload\.identity/client-id=$AKS_CLIENT_ID" \
+              --set "podLabels.azure\.workload\.identity/use=true" \
+              --wait \
+              --timeout 5m
           else
-            # Install External Secrets Operator
+            # Install External Secrets Operator with Azure identity
             helm install external-secrets external-secrets/external-secrets \
               --namespace external-secrets-system \
               --create-namespace \
               --set installCRDs=true \
+              --set "serviceAccount.annotations.azure\.workload\.identity/client-id=$AKS_CLIENT_ID" \
+              --set "podLabels.azure\.workload\.identity/use=true" \
               --wait \
               --timeout 5m
 
@@ -515,6 +531,59 @@ jobs:
 
           echo "✓ External Secrets Operator is ready!"
 
+      - name: Setup Service Principal for External Secrets
+        run: |
+          RESOURCE_GROUP="${{ env.TF_VAR_resource_group_name }}"
+          KEY_VAULT_NAME=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query "[?!contains(name, 'tfstate')].name" --output tsv | head -1)
+
+          # Check if Service Principal secret already exists
+          if kubectl get secret azure-secret-sp -n todo-app &>/dev/null; then
+            echo "Service Principal secret already exists"
+          else
+            echo "Creating Service Principal for External Secrets..."
+
+            # Create Service Principal (stored in GitHub Secrets)
+            # Expected GitHub Secrets: EXTERNAL_SECRETS_SP_CLIENT_ID, EXTERNAL_SECRETS_SP_CLIENT_SECRET
+
+            if [ -z "${{ secrets.EXTERNAL_SECRETS_SP_CLIENT_ID }}" ] || [ -z "${{ secrets.EXTERNAL_SECRETS_SP_CLIENT_SECRET }}" ]; then
+              echo "⚠️ WARNING: Service Principal secrets not found in GitHub Secrets!"
+              echo "Please create a Service Principal and add to GitHub Secrets:"
+              echo "  EXTERNAL_SECRETS_SP_CLIENT_ID"
+              echo "  EXTERNAL_SECRETS_SP_CLIENT_SECRET"
+              echo ""
+              echo "Run these commands and save the output:"
+              echo "  SP_NAME=\"sp-external-secrets-\$(date +%s)\""
+              echo "  az ad sp create-for-rbac --name \$SP_NAME --skip-assignment"
+              echo ""
+              echo "Then give it Key Vault access:"
+              echo "  az keyvault set-policy --name $KEY_VAULT_NAME --spn <APP_ID> --secret-permissions get list"
+              exit 1
+            fi
+
+            # Create Kubernetes Secret with SP credentials
+            kubectl create secret generic azure-secret-sp -n todo-app \
+              --from-literal=ClientID="${{ secrets.EXTERNAL_SECRETS_SP_CLIENT_ID }}" \
+              --from-literal=ClientSecret="${{ secrets.EXTERNAL_SECRETS_SP_CLIENT_SECRET }}"
+
+            echo "✓ Service Principal secret created"
+
+            # Verify SP has Key Vault access
+            echo "Verifying Service Principal has Key Vault access..."
+            SP_OBJECT_ID=$(az ad sp show --id "${{ secrets.EXTERNAL_SECRETS_SP_CLIENT_ID }}" --query "id" -o tsv)
+
+            EXISTING_POLICY=$(az keyvault show --name "$KEY_VAULT_NAME" --query "properties.accessPolicies[?objectId=='$SP_OBJECT_ID']" -o tsv)
+
+            if [ -z "$EXISTING_POLICY" ]; then
+              echo "Adding Key Vault access policy for Service Principal..."
+              az keyvault set-policy --name "$KEY_VAULT_NAME" \
+                --spn "${{ secrets.EXTERNAL_SECRETS_SP_CLIENT_ID }}" \
+                --secret-permissions get list
+              echo "✓ Key Vault access policy added"
+            else
+              echo "✓ Service Principal already has Key Vault access"
+            fi
+          fi
+
       - name: Configure ArgoCD Applications
         run: |
           # Get Key Vault information first
@@ -523,14 +592,10 @@ jobs:
           KEY_VAULT_NAME=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query "[?!contains(name, 'tfstate')].name" --output tsv | head -1)
           KEY_VAULT_URI=$(az keyvault show --name "$KEY_VAULT_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.vaultUri" --output tsv)
           TENANT_ID=$(az account show --query tenantId --output tsv)
-          AKS_CLIENT_ID=$(az aks show --name "$AKS_NAME" --resource-group "$RESOURCE_GROUP" --query "identityProfile.kubeletidentity.clientId" --output tsv)
-          AKS_OBJECT_ID=$(az aks show --name "$AKS_NAME" --resource-group "$RESOURCE_GROUP" --query "identityProfile.kubeletidentity.objectId" --output tsv)
 
           echo "Key Vault Name: $KEY_VAULT_NAME"
           echo "Key Vault URI: $KEY_VAULT_URI"
           echo "Tenant ID: $TENANT_ID"
-          echo "AKS Client ID: $AKS_CLIENT_ID"
-          echo "AKS Object ID: $AKS_OBJECT_ID"
 
           echo "Applying ArgoCD project..."
           kubectl apply -f argocd/project.yaml
@@ -552,14 +617,15 @@ jobs:
                   \"parameters\": [
                     {\"name\": \"azure.keyVaultName\", \"value\": \"$KEY_VAULT_NAME\"},
                     {\"name\": \"azure.keyVaultUri\", \"value\": \"$KEY_VAULT_URI\"},
-                    {\"name\": \"azure.tenantId\", \"value\": \"$TENANT_ID\"},
-                    {\"name\": \"azure.clientId\", \"value\": \"$AKS_CLIENT_ID\"},
-                    {\"name\": \"azure.objectId\", \"value\": \"$AKS_OBJECT_ID\"}
+                    {\"name\": \"azure.tenantId\", \"value\": \"$TENANT_ID\"}
                   ]
                 }
               }
             }
           }"
+
+          # Apply Ingress application (NGINX controller)
+          kubectl apply -f argocd/ingress-application.yaml
 
           # Apply MongoDB application
           kubectl apply -f argocd/mongodb-application.yaml

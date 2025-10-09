@@ -1,0 +1,2 @@
+# This chart uses dependencies only (ingress-nginx)
+# No custom templates needed
