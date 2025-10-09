@@ -2,12 +2,6 @@
 terraform {
   required_version = ">= 1.0"
 
-  # Backend configuration for remote state storage
-  # Dynamic values provided via terraform init -backend-config:
-  # - resource_group_name=rg-terraform-state
-  # - storage_account_name=sttodoterraformstate
-  # - container_name=tfstate
-  # - key={environment}/terraform.tfstate
   backend "azurerm" {
     use_azuread_auth = false  # Use Service Principal authentication for GitHub Actions
   }
@@ -119,7 +113,7 @@ module "aks" {
   min_node_count        = var.min_node_count
   max_node_count        = var.max_node_count
   vm_size               = var.vm_size
-  admin_group_object_ids = []  # Tom lista för nu, kan konfigureras senare
+  admin_group_object_ids = []
 }
 
 # RBAC Module

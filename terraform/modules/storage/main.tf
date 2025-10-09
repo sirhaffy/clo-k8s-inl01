@@ -21,7 +21,7 @@ resource "azurerm_storage_account" "main" {
 
   # Network rules
   network_rules {
-    default_action = "Allow"  # "Deny" for production with private endpoints
+    default_action = "Allow"
     bypass         = ["AzureServices"]
   }
 

@@ -15,14 +15,13 @@ data:
   controller.repo.server.timeout.seconds: "60"
 
   # Repository polling interval (how often to check Git for changes)
-  # Default is 3m, setting to 2m for faster updates
-  controller.repo.server.polling.interval: "2m"
+  controller.repo.server.polling.interval: "5m"
 
   # Application sync timeout
   controller.sync.timeout.seconds: "300"
 
   # Refresh interval for applications (how often to check for drift)
-  controller.app.hard.refresh.interval: "3m"
+  controller.app.hard.refresh.interval: "10m"
 
 ---
 # Configuration for ArgoCD server
