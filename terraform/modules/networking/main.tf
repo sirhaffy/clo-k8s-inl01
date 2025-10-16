@@ -15,20 +15,12 @@ resource "azurerm_subnet" "aks" {
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-# Application Gateway Subnet (for ingress)
-resource "azurerm_subnet" "appgw" {
-  name                 = "snet-appgw-${var.naming_prefix}"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.2.0/24"]
-}
-
 # Private Endpoints Subnet
 resource "azurerm_subnet" "private_endpoints" {
   name                 = "snet-pe-${var.naming_prefix}"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.3.0/24"]
+  address_prefixes     = ["10.0.2.0/24"]
 }
 
 # Network Security Group for AKS
@@ -48,19 +40,6 @@ resource "azurerm_network_security_group" "aks" {
     source_port_range          = "*"
     destination_port_range     = "*"
     source_address_prefix      = "10.0.1.0/24"
-    destination_address_prefix = "10.0.1.0/24"
-  }
-
-  # Allow HTTPS from Application Gateway
-  security_rule {
-    name                       = "AllowHTTPSFromAppGW"
-    priority                   = 110
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "10.0.2.0/24"
     destination_address_prefix = "10.0.1.0/24"
   }
 

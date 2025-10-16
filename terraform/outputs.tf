@@ -30,15 +30,7 @@ output "storage_account_name" {
   value       = module.storage.storage_account_name
 }
 
-output "application_gateway_public_ip" {
-  description = "Public IP address of Application Gateway"
-  value       = module.application_gateway.public_ip_address
-}
 
-output "application_gateway_name" {
-  description = "Name of the Application Gateway"
-  value       = module.application_gateway.name
-}
 
 output "aks_managed_identity_id" {
   description = "AKS Managed Identity ID"
@@ -83,8 +75,8 @@ output "next_steps" {
 
     Azure Infrastructure deployed successfully!
 
-    Application Gateway Public IP: ${module.application_gateway.public_ip_address}
-    AKS Auto-scaling: Enabled (Min: 2, Max: 5 nodes)
+    NGINX Ingress LoadBalancer: Deployed via Kubernetes
+    AKS Auto-scaling: Enabled (Min: 1, Max: 5 nodes)
 
     Next Steps:
 
@@ -94,10 +86,10 @@ output "next_steps" {
          "kubectl get nodes"
        ])}
 
-    2. Access Todo App:
+    2. Get NGINX Ingress LoadBalancer IP:
        ${join("\n       ", [
-         "curl -H 'Host: localhost' http://${module.application_gateway.public_ip_address}",
-         "# Or open in browser: http://${module.application_gateway.public_ip_address}"
+         "kubectl get svc -n ingress-nginx ingress-nginx-controller",
+         "# Access: http://<EXTERNAL-IP>"
        ])}
 
     3. Check auto-scaling status:
