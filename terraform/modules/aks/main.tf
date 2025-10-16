@@ -37,6 +37,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     enable_auto_scaling    = true
     min_count              = var.min_node_count
     max_count              = var.max_node_count
+    zones                  = ["1", "2", "3"] # Availability Zones for high availability
     temporary_name_for_rotation = "defaulttemp" # Temporary name for node pool during upgrade
 
     upgrade_settings {
